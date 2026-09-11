@@ -8,6 +8,62 @@ One road segment. A script sends **speed**. A sudden drop to zero opens a **case
 
 Done means: `clone → up → simulator → card → yes/no → audit row`.
 
+## Loop
+
+```mermaid
+sequenceDiagram
+    participant Sim as Simulator
+    participant API as API
+    participant DB as Postgres
+    participant Web as Console
+    participant Op as Operator
+
+    Sim->>API: POST /events speed on A
+    API->>DB: write event by event_id
+    Note over API: last two samples: moving then ~0
+    API->>DB: open at most one case
+    opt LLM key set
+        API->>API: draft why on the card
+    end
+    Web->>API: poll events and cases
+    API-->>Web: tape plus case card
+    Op->>Web: approve or reject
+    Web->>API: POST /cases/id/approve or reject
+    alt approve
+        API->>DB: drone in_flight then on_site
+    else reject
+        API->>DB: drone stays idle
+    end
+    API->>DB: audit who what when why
+```
+
+Events are not foreign-keyed to cases: a code rule opens a case from recent speeds.
+
+```mermaid
+erDiagram
+    cases ||--o{ audit_entries : has
+    events {
+        int id PK
+        string event_id UK
+        string segment
+        float speed
+        datetime recorded_at
+    }
+    cases {
+        int id PK
+        string segment
+        string status
+        string drone_status
+    }
+    audit_entries {
+        int id PK
+        int case_id FK
+        string actor
+        string action
+        string why
+    }
+```
+
 ## Domain
 
 In:

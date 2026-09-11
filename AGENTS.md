@@ -29,6 +29,12 @@ Not a chat product. Not a toy map city.
 
 When a durable scope or tech choice is locked, add the next `docs/adr/NNNN-*.md` and a row in `docs/adr/README.md`. Do not edit an Accepted ADR to say the opposite — add a new one and mark the old `Superseded by NNNN`. Skip ADRs for still-open questions and for cosmetic taste. English only.
 
+## How we work
+
+- Build the current plan **one unit at a time** (`docs/plans/01-mvp.md`: U1 → U7). Finish a unit (code + named tests + check) before starting the next.
+- **Talk to the user** at unit boundaries: what this unit does, what you are about to write, what you need confirmed (package install, schema shape, copy). Do not silently batch the whole plan.
+- If a choice is still open in the plan (thresholds, copy, drone table vs columns), ask instead of inventing a durable default.
+
 ## While building
 
 - **Tests** ([ADR 0006](docs/adr/0006-tests-without-tdd-on-mvp.md)): ship the tests named in the current plan unit. TDD (red-first) is not required on MVP; consider it from v1 on the API loop only.
