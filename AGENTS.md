@@ -34,6 +34,8 @@ When a durable scope or tech choice is locked, add the next `docs/adr/NNNN-*.md`
 - Build the current plan **one unit at a time** (`docs/plans/01-mvp.md`: U1 → U7). Finish a unit (code + named tests + check) before starting the next.
 - **Talk to the user** at unit boundaries: what this unit does, what you are about to write, what you need confirmed (package install, schema shape, copy). Do not silently batch the whole plan.
 - If a choice is still open in the plan (thresholds, copy, drone table vs columns), ask instead of inventing a durable default.
+- If you see a **contradiction** (scope vs plan, two ADRs, ADR vs code, user request vs a locked decision), **stop**. Name both sides; do not paper over or pick silently.
+- **Teach.** The user is learning the system themselves. When a term or a hard step shows up (ingest, collapse, migration, idempotency, a type quirk), explain it in plain language before or with the work. Do not assume jargon is obvious.
 
 ## While building
 
