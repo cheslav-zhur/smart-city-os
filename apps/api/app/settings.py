@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
     database_url: str
+    audit_actor: str = "demo-operator"
 
     @property
     def sqlalchemy_url(self) -> str:
