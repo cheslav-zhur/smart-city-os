@@ -1,0 +1,27 @@
+{
+  "name": "smart-city-os",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [5173, 8000, 5432],
+  "portsAttributes": {
+    "5173": { "label": "web" },
+    "8000": { "label": "api" },
+    "5432": { "label": "postgres" }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+  "remoteEnv": {
+    "DATABASE_URL": "postgresql://city:city@postgres:5432/city"
+  }
+}

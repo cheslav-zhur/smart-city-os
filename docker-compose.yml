@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: city
+      POSTGRES_PASSWORD: city
+      POSTGRES_DB: city
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U city -d city"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  dev:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspace:cached
+      - pip_cache:/cache/pip
+      - pnpm_cache:/cache/pnpm
+      - uv_cache:/cache/uv
+    working_dir: /workspace
+    command: sleep infinity
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://city:city@postgres:5432/city
+      PIP_CACHE_DIR: /cache/pip
+      npm_config_store_dir: /cache/pnpm
+      UV_CACHE_DIR: /cache/uv
+
+volumes:
+  postgres_data:
+  pip_cache:
+  pnpm_cache:
+  uv_cache:
