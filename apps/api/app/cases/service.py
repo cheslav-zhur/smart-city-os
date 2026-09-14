@@ -34,3 +34,8 @@ def maybe_open_on_collapse(session: Session, segment: str) -> Case | None:
     session.add(case)
     session.flush()
     return case
+
+
+def list_cases(session: Session) -> list[Case]:
+    """All cases (open and decided), newest first by serial id."""
+    return list(session.scalars(select(Case).order_by(Case.id.desc())).all())

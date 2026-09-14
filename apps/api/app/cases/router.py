@@ -10,7 +10,8 @@ from app.audit.service import (
     WHY_REJECT,
     write_audit,
 )
-from app.cases.service import CASE_OPEN
+from app.cases.schemas import CaseListItem
+from app.cases.service import CASE_OPEN, list_cases
 from app.db import get_session
 from app.drone.service import DRONE_IDLE, dispatch_after_approve
 from app.models import Case
@@ -28,6 +29,21 @@ def _get_open_case(session: Session, case_id: int) -> Case:
     if case.status != CASE_OPEN:
         raise HTTPException(status_code=409, detail="case already decided")
     return case
+
+
+@router.get("/cases")
+def get_cases(
+    session: Annotated[Session, Depends(get_session)],
+) -> list[CaseListItem]:
+    return [
+        CaseListItem(
+            id=case.id,
+            segment=case.segment,
+            status=case.status,
+            drone_status=case.drone_status,
+        )
+        for case in list_cases(session)
+    ]
 
 
 @router.post("/cases/{case_id}/approve")

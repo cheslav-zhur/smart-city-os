@@ -26,3 +26,12 @@ class EventOut(BaseModel):
     recorded_at: datetime
     duplicate: bool
     case_id: int | None
+
+
+class EventTapeItem(BaseModel):
+    """Console tape row: speeds only, not the ingest echo."""
+
+    event_id: str
+    segment: str
+    speed: float
+    recorded_at: datetime

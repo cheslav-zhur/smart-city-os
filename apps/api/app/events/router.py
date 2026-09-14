@@ -5,10 +5,25 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.db import get_session
-from app.events.schemas import EventIn, EventOut
-from app.events.service import ingest_event
+from app.events.schemas import EventIn, EventOut, EventTapeItem
+from app.events.service import ingest_event, list_segment_a_events
 
 router = APIRouter()
+
+
+@router.get("/events")
+def get_events(
+    session: Annotated[Session, Depends(get_session)],
+) -> list[EventTapeItem]:
+    return [
+        EventTapeItem(
+            event_id=event.event_id,
+            segment=event.segment,
+            speed=event.speed,
+            recorded_at=event.recorded_at,
+        )
+        for event in list_segment_a_events(session)
+    ]
 
 
 @router.post("/events")
