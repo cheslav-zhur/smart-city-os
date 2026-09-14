@@ -1,0 +1,164 @@
+:root {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.4;
+  color: #1a1a1a;
+  background: #f3f2ee;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+h1 {
+  font-size: 1.25rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.empty {
+  margin: 0;
+  color: #444;
+}
+
+.error {
+  margin: 0.35rem 0 0;
+  color: #8a1f1f;
+}
+
+.desk {
+  min-height: 100vh;
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+.desk-header {
+  margin-bottom: 1rem;
+}
+
+.desk-body {
+  display: grid;
+  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.list-pane,
+.card {
+  background: #fff;
+  border: 1px solid #d8d6d0;
+  padding: 1rem;
+}
+
+.case-head,
+.case-row {
+  display: grid;
+  grid-template-columns: 3.5rem 4.5rem 6.5rem 1fr;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+}
+
+.case-head {
+  font-size: 0.75rem;
+  text-transform: lowercase;
+  color: #555;
+  padding: 0 0.6rem 0.35rem;
+}
+
+.case-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.case-row {
+  border: 1px solid transparent;
+  background: #fafafa;
+  padding: 0.45rem 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.case-row.selected {
+  border-color: #1a1a1a;
+  background: #eceae4;
+}
+
+.case-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.case-meta div {
+  margin: 0;
+}
+
+.case-meta dt {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.case-meta dd {
+  margin: 0.1rem 0 0;
+}
+
+.proposal {
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.actions button {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #1a1a1a;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.actions button:last-child {
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.speed-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.speed-table th,
+.speed-table td {
+  text-align: left;
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid #e4e2dc;
+  vertical-align: top;
+}
+
+.speed-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #555;
+}
