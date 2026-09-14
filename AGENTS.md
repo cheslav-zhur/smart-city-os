@@ -29,6 +29,26 @@ Not a chat product. Not a toy map city.
 
 When a durable scope or tech choice is locked, add the next `docs/adr/NNNN-*.md` and a row in `docs/adr/README.md`. Do not edit an Accepted ADR to say the opposite — add a new one and mark the old `Superseded by NNNN`. Skip ADRs for still-open questions and for cosmetic taste. English only.
 
+## Agent roster
+
+The human is CTO / team lead. They name the plan unit. The parent chat **dispatches** specialists; it does not start U+1 or swarm unasked.
+
+Project subagents (`.cursor/agents/`):
+
+- `architect` — ADR/scope briefing; no feature code
+- `senior-backend` — U1–U4, U6 API, API side of U7
+- `senior-frontend` — U5 console, web side of U7
+- `senior-qa` — named tests after a unit; no extra product
+
+**Dispatch** (only after the CTO names a unit, e.g. «делаем U3»):
+
+1. Invoke `architect`. Stop and wait if it reports **wait**, a contradiction, or open choices that need a call (packages, schema, copy, thresholds).
+2. Invoke **one** implementer: `senior-backend` or `senior-frontend` for that unit. Never both in parallel. U7: API/postgres first, then web.
+3. Invoke `senior-qa` on the finished unit.
+4. Stop. The CTO accepts the unit. Do not start the next one.
+
+Do not invoke these roles because a file is open, a test failed in passing, or “it would be good to review.” No proactive swarm.
+
 ## How we work
 
 - Build the current plan **one unit at a time** (`docs/plans/01-mvp.md`: U1 → U7). Finish a unit (code + named tests + check) before starting the next.
