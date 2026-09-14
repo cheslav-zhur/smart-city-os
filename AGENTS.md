@@ -57,6 +57,7 @@ Do not invoke these roles because a file is open, a test failed in passing, or �
 - If you see a **contradiction** (scope vs plan, two ADRs, ADR vs code, user request vs a locked decision), **stop**. Name both sides; do not paper over or pick silently.
 - **Teach.** The user is learning the system themselves. When a term or a hard step shows up (ingest, collapse, migration, idempotency, a type quirk), explain it in plain language before or with the work. Do not assume jargon is obvious.
 - **Commit messages** name the plan unit and the zone, then the why: `feat(api): U5 list cases and events for console poll`. Zones: `api`, `web`, `sim`, `docs`. Do not commit unless the CTO asks.
+- When a specialist (or you) hits an **environment failure** (disk full / ENOSPC, missing cache, port in use, Postgres down), put it in the parent summary in plain language. Do not hide it behind “tests passed” or treat it as noise. Say what broke, the workaround, and whether the next clone still needs it.
 
 ## While building
 
