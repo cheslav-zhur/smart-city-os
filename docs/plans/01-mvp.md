@@ -53,7 +53,7 @@ Do them in order. Each unit should leave tests greener than before. The CTO mark
 | U4 simulator | done |
 | U5 console | done |
 | U6 LLM stub | done |
-| U7 run path | todo |
+| U7 run path | done |
 
 ### U1 — API skeleton and schema
 

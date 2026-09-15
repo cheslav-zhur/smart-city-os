@@ -10,8 +10,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       // Browser stays on one origin. FastAPI has no /api prefix.
+      // Compose `web` service sets API_PROXY_TARGET=http://api:8000.
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
