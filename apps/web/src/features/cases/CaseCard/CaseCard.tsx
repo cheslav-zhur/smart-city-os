@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { CaseListItem } from './api/generated/models/caseListItem'
-import type { EventTapeItem } from './api/generated/models/eventTapeItem'
-import type { DecideKind } from './decide'
-import { CASE_OPEN, formatDroneStatus } from './domain'
-import { StatusChip } from './StatusChip'
-import { formatRelativeTime, isCollapseSpeed } from './time'
+import type { CaseListItem } from '../../../api/generated/models/caseListItem'
+import type { EventTapeItem } from '../../../api/generated/models/eventTapeItem'
+import { formatRelativeTime, isCollapseSpeed } from '../../../shared/lib/time'
+import type { DecideKind } from '../decide'
+import { CASE_OPEN, formatDroneStatus } from '../domain'
+import { StatusChip } from '../StatusChip'
 
 type CaseCardProps = {
   caseRow: CaseListItem | null

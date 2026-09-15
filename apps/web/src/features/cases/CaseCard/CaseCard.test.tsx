@@ -4,15 +4,15 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import {
   postApproveCasesCaseIdApprovePost,
   postRejectCasesCaseIdRejectPost,
-} from './api/generated/cases/cases'
-import { CaseCard } from './CaseCard'
-import type { CaseListItem } from './api/generated/models/caseListItem'
+} from '../../../api/generated/cases/cases'
+import type { CaseListItem } from '../../../api/generated/models/caseListItem'
 import {
   CASE_APPROVED,
   CASE_OPEN,
   DRONE_IDLE,
   DRONE_ON_SITE,
-} from './domain'
+} from '../domain'
+import { CaseCard } from './CaseCard'
 
 const openCase: CaseListItem = {
   id: 7,

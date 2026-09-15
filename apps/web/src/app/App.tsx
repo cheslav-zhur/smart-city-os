@@ -6,15 +6,17 @@ import {
   useGetCasesCasesGet,
   usePostApproveCasesCaseIdApprovePost,
   usePostRejectCasesCaseIdRejectPost,
-} from './api/generated/cases/cases'
-import { useGetEventsEventsGet } from './api/generated/events/events'
-import type { CaseDecisionOut } from './api/generated/models/caseDecisionOut'
-import type { CaseListItem } from './api/generated/models/caseListItem'
-import { CaseCard } from './CaseCard'
-import { CaseList } from './CaseList'
-import type { DecideKind } from './decide'
-import { CASE_OPEN } from './domain'
-import { ThemeToggle } from './ThemeToggle'
+} from '../api/generated/cases/cases'
+import { useGetEventsEventsGet } from '../api/generated/events/events'
+import type { CaseDecisionOut } from '../api/generated/models/caseDecisionOut'
+import type { CaseListItem } from '../api/generated/models/caseListItem'
+import {
+  CASE_OPEN,
+  CaseCard,
+  CaseList,
+  type DecideKind,
+} from '../features/cases'
+import { ThemeToggle } from '../shared/theme'
 
 const POLL_MS = 2000
 const LAST_SPEED_COUNT = 8

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App'
+import App from './app/App'
 import './index.css'
 
 const root = document.getElementById('root')

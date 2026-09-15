@@ -1,4 +1,4 @@
-import type { CaseListItem } from './api/generated/models/caseListItem'
+import type { CaseListItem } from '../../api/generated/models/caseListItem'
 import { formatDroneStatus } from './domain'
 import { StatusChip } from './StatusChip'
 
