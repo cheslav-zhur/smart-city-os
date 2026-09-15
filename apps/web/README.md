@@ -11,7 +11,7 @@ src/
     cases/             # case list/card, HITL decide, case/drone status
   shared/
     theme/             # light/dark
-    ui/                # presentational atoms (Button, Panel, …) + *.stories.tsx
+    ui/                # presentational atoms (Button, Panel, EmptyState, …) + *.stories.tsx
     lib/               # pure helpers (time, …)
   api/                 # orval client + mutator (infrastructure)
   main.tsx

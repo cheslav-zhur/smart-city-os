@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CaseListItem } from '../../../api/generated/models/caseListItem'
 import type { EventTapeItem } from '../../../api/generated/models/eventTapeItem'
 import { formatRelativeTime, isCollapseSpeed } from '../../../shared/lib/time'
-import { Button, Panel } from '../../../shared/ui'
+import { Button, EmptyState, Panel, SimCommand } from '../../../shared/ui'
 import type { DecideKind } from '../decide'
 import { CASE_OPEN, formatDroneStatus } from '../domain'
 import { StatusChip } from '../StatusChip'
@@ -96,16 +96,10 @@ export function CaseCard({
           </div>
         </>
       ) : (
-        <div className="mb-10 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          <p className="m-0 font-medium text-slate-700 dark:text-slate-200">
-            No case selected
-          </p>
-          <p className="mt-1.5 mb-0">
-            Pick a case from the list, or run{' '}
-            <code className="font-mono text-[0.8rem]">make sim</code> to open
-            one from a speed collapse.
-          </p>
-        </div>
+        <EmptyState title="No case selected" className="mb-10">
+          Pick a case from the list, or run <SimCommand /> to open one from a
+          speed collapse.
+        </EmptyState>
       )}
 
       <div className="border-t border-slate-900/5 pt-6 dark:border-white/5">
@@ -122,16 +116,10 @@ export function CaseCard({
             ))}
           </div>
         ) : speeds.length === 0 ? (
-          <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-            <p className="m-0 font-medium text-slate-700 dark:text-slate-200">
-              No speed samples yet
-            </p>
-            <p className="mt-1.5 mb-0">
-              The live tape appears after{' '}
-              <code className="font-mono text-[0.8rem]">make sim</code> posts
-              events on segment A.
-            </p>
-          </div>
+          <EmptyState title="No speed samples yet">
+            The live tape appears after <SimCommand /> posts events on segment
+            A.
+          </EmptyState>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">

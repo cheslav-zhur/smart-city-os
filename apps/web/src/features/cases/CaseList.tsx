@@ -1,4 +1,5 @@
 import type { CaseListItem } from '../../api/generated/models/caseListItem'
+import { EmptyState, SimCommand } from '../../shared/ui'
 import { formatDroneStatus } from './domain'
 import { StatusChip } from './StatusChip'
 
@@ -34,15 +35,9 @@ export function CaseList({
 
   if (cases.length === 0) {
     return (
-      <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-        <p className="m-0 font-medium text-slate-700 dark:text-slate-200">
-          No cases yet
-        </p>
-        <p className="mt-1.5 mb-0">
-          Run <code className="font-mono text-[0.8rem]">make sim</code> to send
-          the speed tape and open a collapse case.
-        </p>
-      </div>
+      <EmptyState title="No cases yet">
+        Run <SimCommand /> to send the speed tape and open a collapse case.
+      </EmptyState>
     )
   }
 
