@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CaseListItem } from '../../../api/generated/models/caseListItem'
 import type { EventTapeItem } from '../../../api/generated/models/eventTapeItem'
 import { formatRelativeTime, isCollapseSpeed } from '../../../shared/lib/time'
+import { Button, Panel } from '../../../shared/ui'
 import type { DecideKind } from '../decide'
 import { CASE_OPEN, formatDroneStatus } from '../domain'
 import { StatusChip } from '../StatusChip'
@@ -16,9 +17,6 @@ type CaseCardProps = {
   onApprove: () => void
   onReject: () => void
 }
-
-const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f4f6f8] dark:focus-visible:ring-offset-[#0b1220]'
 
 export function CaseCard({
   caseRow,
@@ -46,7 +44,7 @@ export function CaseCard({
     ?.event_id
 
   return (
-    <section className="rounded-2xl bg-white/80 p-7 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-white/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+    <Panel as="section" padding="lg">
       {casesLoading && caseRow === null ? (
         <div className="mb-10 space-y-3" aria-hidden="true">
           <div className="h-4 w-40 animate-pulse rounded bg-slate-900/5 dark:bg-white/5" />
@@ -79,22 +77,22 @@ export function CaseCard({
           )}
 
           <div className="mb-10 flex flex-wrap gap-3">
-            <button
-              type="button"
+            <Button
+              variant="primary"
               disabled={!canDecide}
+              busy={busyKind === 'approve'}
               onClick={onApprove}
-              className={`cursor-pointer rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-teal-500 dark:text-slate-950 dark:hover:bg-teal-400 ${focusRing}`}
             >
               {busyKind === 'approve' ? 'Sending…' : 'Send drone'}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="ghost"
               disabled={!canDecide}
+              busy={busyKind === 'reject'}
               onClick={onReject}
-              className={`cursor-pointer rounded-xl bg-slate-900/5 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-900/10 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10 ${focusRing}`}
             >
               {busyKind === 'reject' ? 'Dismissing…' : 'Dismiss'}
-            </button>
+            </Button>
           </div>
         </>
       ) : (
@@ -184,6 +182,6 @@ export function CaseCard({
           </div>
         )}
       </div>
-    </section>
+    </Panel>
   )
 }

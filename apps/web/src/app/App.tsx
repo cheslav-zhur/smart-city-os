@@ -17,6 +17,7 @@ import {
   type DecideKind,
 } from '../features/cases'
 import { ThemeToggle } from '../shared/theme'
+import { Panel } from '../shared/ui'
 
 const POLL_MS = 2000
 const LAST_SPEED_COUNT = 8
@@ -185,7 +186,7 @@ export default function App() {
         <ThemeToggle />
       </header>
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)] lg:gap-8">
-        <aside className="rounded-2xl bg-white/80 p-5 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-white/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+        <Panel as="aside" padding="md">
           <h2 className="mb-4 text-sm font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
             Cases
           </h2>
@@ -195,7 +196,7 @@ export default function App() {
             onSelect={selectCase}
             loading={casesQuery.isLoading && casesQuery.data == null}
           />
-        </aside>
+        </Panel>
         <CaseCard
           caseRow={selected}
           speeds={speeds}
