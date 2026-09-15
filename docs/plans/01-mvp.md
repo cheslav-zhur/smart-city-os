@@ -52,7 +52,7 @@ Do them in order. Each unit should leave tests greener than before. The CTO mark
 | U3 HITL | done |
 | U4 simulator | done |
 | U5 console | done |
-| U6 LLM stub | todo |
+| U6 LLM stub | done |
 | U7 run path | todo |
 
 ### U1 — API skeleton and schema
@@ -112,6 +112,8 @@ Do them in order. Each unit should leave tests greener than before. The CTO mark
 **Files.** `docker-compose.yml` (add services; keep `dev`), `README.md`, `.env.example`.
 
 **Check.** Documented path: up → sim → click → audit row.
+
+**Todo (venv / daily commands).** Document one Python venv only: `apps/api/.venv` (create via README: `python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'`). Prefer explicit `apps/api/.venv/bin/…` for alembic / uvicorn / pytest / pre-commit so shells and agents do not depend on `activate` or a root `/workspace/.venv`. Sim stays stdlib (`python apps/sim/run.py`) — no second venv. Optional thin Makefile wrappers (`migrate`, `api`, `web`, `sim`, `test-api`) over those same commands; do not invent a second Python toolchain (ADR 0004).
 
 ## Risks
 

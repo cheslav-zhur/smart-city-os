@@ -38,7 +38,7 @@ apps/api/.venv/bin/pre-commit install
 
 ## Status
 
-MVP plan: U1–U5 done, U6–U7 still open. Progress lives in [`docs/plans/01-mvp.md`](docs/plans/01-mvp.md) — do not duplicate the table here.
+MVP plan: U1–U6 done, U7 still open. Progress lives in [`docs/plans/01-mvp.md`](docs/plans/01-mvp.md) — do not duplicate the table here.
 
 ## Docs
 
