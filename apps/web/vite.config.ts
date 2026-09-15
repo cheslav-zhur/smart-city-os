@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vitest/config'
 
 const apiProxyTarget =
@@ -6,7 +7,7 @@ const apiProxyTarget =
     ?.env?.API_PROXY_TARGET ?? 'http://127.0.0.1:8000'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [tailwindcss(), react()],
   server: {
     // 0.0.0.0 so the forwarded 5173 port is reachable from the browser.
     host: true,

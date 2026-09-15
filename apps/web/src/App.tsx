@@ -12,6 +12,7 @@ import type { CaseDecisionOut } from './api/generated/models/caseDecisionOut'
 import type { CaseListItem } from './api/generated/models/caseListItem'
 import { CaseCard } from './CaseCard'
 import { CaseList } from './CaseList'
+import { ThemeToggle } from './ThemeToggle'
 
 const POLL_MS = 2000
 const LAST_SPEED_COUNT = 8
@@ -124,19 +125,33 @@ export default function App() {
   const selected = cases.find((row) => row.id === selectedId) ?? null
 
   return (
-    <main className="desk">
-      <header className="desk-header">
-        <h1>Operations desk</h1>
-        {loadError ? (
-          <p className="error">Could not load cases or events.</p>
-        ) : null}
-        {decideError ? (
-          <p className="error">Could not apply approve or reject.</p>
-        ) : null}
+    <main className="min-h-screen px-6 py-8 text-slate-800 md:px-10 dark:text-slate-100">
+      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-xl">
+          <p className="mb-1 text-xs font-medium tracking-[0.14em] text-slate-500 uppercase dark:text-slate-400">
+            Smart City OS
+          </p>
+          <h1 className="m-0 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            Operations desk
+          </h1>
+          {loadError ? (
+            <p className="mt-3 mb-0 text-sm text-rose-700 dark:text-rose-300">
+              Could not load cases or events.
+            </p>
+          ) : null}
+          {decideError ? (
+            <p className="mt-3 mb-0 text-sm text-rose-700 dark:text-rose-300">
+              Could not apply approve or reject.
+            </p>
+          ) : null}
+        </div>
+        <ThemeToggle />
       </header>
-      <div className="desk-body">
-        <aside className="list-pane">
-          <h2>Cases</h2>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)] lg:gap-8">
+        <aside className="rounded-2xl bg-white/80 p-5 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-white/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+          <h2 className="mb-4 text-sm font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
+            Cases
+          </h2>
           <CaseList
             cases={cases}
             selectedId={selectedId}
