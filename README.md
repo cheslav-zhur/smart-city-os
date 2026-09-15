@@ -38,7 +38,7 @@ apps/api/.venv/bin/pre-commit install
 
 ## Status
 
-Scope docs and the dev container are in place. App runtime is not. Start from the MVP.
+MVP plan: U1–U5 done, U6–U7 still open. Progress lives in [`docs/plans/01-mvp.md`](docs/plans/01-mvp.md) — do not duplicate the table here.
 
 ## Docs
 

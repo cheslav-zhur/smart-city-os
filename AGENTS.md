@@ -42,7 +42,7 @@ Do not invoke these roles because a file is open, a test failed in passing, or �
 
 ## How we work
 
-- Build the current plan **one unit at a time** (`docs/plans/01-mvp.md`: U1 → U7). Finish a unit (code + named tests + check) before starting the next.
+- Build the current plan **one unit at a time** (`docs/plans/01-mvp.md`: U1 → U7). Finish a unit (code + named tests + check) before starting the next. After the CTO accepts a unit, mark its **Status** in that plan. Do not mark `done` unasked.
 - **Talk to the user** at unit boundaries: what this unit does, what you are about to write, what you need confirmed (package install, schema shape, copy). Do not silently batch the whole plan.
 - If a choice is still open in the plan (thresholds, copy, drone table vs columns), ask instead of inventing a durable default.
 - Do not copy API paths or response shapes into `apps/web` (or generate an OpenAPI client) without asking. MVP keeps a thin hand-written `api.ts`. Generating TypeScript from FastAPI OpenAPI is a **v1** question — see [`docs/scope/02-v1.md`](docs/scope/02-v1.md).

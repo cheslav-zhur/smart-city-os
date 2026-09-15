@@ -17,7 +17,7 @@ Origin: [docs/scope/01-mvp.md](../scope/01-mvp.md). Do not implement v1 or north
 
 ## Problem frame
 
-Scope and ADRs are locked. There is no API, schema, simulator, or console yet — only a devcontainer. An implementer needs a sequence of units, file homes, and checks, not another product debate.
+Scope and ADRs are locked. At plan start there was no API, schema, simulator, or console — only a devcontainer. An implementer needs a sequence of units, file homes, and checks, not another product debate. Current progress is the status table, not this paragraph.
 
 ## Scope
 
@@ -43,7 +43,17 @@ Threshold numbers and copy are execution-time; do not block the plan.
 
 ## Units
 
-Do them in order. Each unit should leave tests greener than before.
+Do them in order. Each unit should leave tests greener than before. The CTO marks **Status** when they accept a unit. Do not mark `done` unasked. Goal / Files / Tests stay the contract.
+
+| Unit | Status |
+|------|--------|
+| U1 API skeleton | done |
+| U2 ingest / collapse | done |
+| U3 HITL | done |
+| U4 simulator | done |
+| U5 console | done |
+| U6 LLM stub | todo |
+| U7 run path | todo |
 
 ### U1 — API skeleton and schema
 
