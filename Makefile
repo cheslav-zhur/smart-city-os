@@ -4,7 +4,7 @@
 export DATABASE_URL ?= postgresql://city:city@postgres:5432/city
 export AUDIT_ACTOR ?= demo-operator
 
-.PHONY: migrate api web sim test-api
+.PHONY: migrate api web sim test-api openapi
 
 migrate:
 	cd apps/api && .venv/bin/alembic upgrade head
@@ -20,3 +20,7 @@ sim:
 
 test-api:
 	cd apps/api && .venv/bin/pytest
+
+openapi:
+	cd apps/api && .venv/bin/python scripts/dump_openapi.py
+	cd apps/web && pnpm gen:api

@@ -1,0 +1,385 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Smart City OS API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/events": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get Events",
+        "operationId": "get_events_events_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EventTapeItem"
+                  },
+                  "type": "array",
+                  "title": "Response Get Events Events Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Post Event",
+        "operationId": "post_event_events_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Get Cases",
+        "operationId": "get_cases_cases_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaseListItem"
+                  },
+                  "type": "array",
+                  "title": "Response Get Cases Cases Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{case_id}/approve": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Post Approve",
+        "operationId": "post_approve_cases__case_id__approve_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDecisionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{case_id}/reject": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Post Reject",
+        "operationId": "post_reject_cases__case_id__reject_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDecisionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CaseDecisionOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "drone_status": {
+            "type": "string",
+            "title": "Drone Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "drone_status"
+        ],
+        "title": "CaseDecisionOut",
+        "description": "Approve / reject response for the console."
+      },
+      "CaseListItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "segment": {
+            "type": "string",
+            "title": "Segment"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "drone_status": {
+            "type": "string",
+            "title": "Drone Status"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "segment",
+          "status",
+          "drone_status",
+          "rationale"
+        ],
+        "title": "CaseListItem",
+        "description": "Console case row: card fields only, no audit or timestamps."
+      },
+      "EventIn": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "segment": {
+            "type": "string",
+            "title": "Segment"
+          },
+          "speed": {
+            "type": "number",
+            "title": "Speed"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "segment",
+          "speed",
+          "recorded_at"
+        ],
+        "title": "EventIn"
+      },
+      "EventTapeItem": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "segment": {
+            "type": "string",
+            "title": "Segment"
+          },
+          "speed": {
+            "type": "number",
+            "title": "Speed"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "segment",
+          "speed",
+          "recorded_at"
+        ],
+        "title": "EventTapeItem",
+        "description": "Console tape row: speeds only, not the ingest echo."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

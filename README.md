@@ -52,6 +52,7 @@ apps/api/.venv/bin/pre-commit install
 | Console | `make web` |
 | Simulator | `make sim` |
 | API tests | `make test-api` |
+| Regen console API client | `make openapi` |
 
 Open the console at the forwarded port **5173**. Run `make api` and `make web` in two terminals inside `dev`. Do not also start the Compose `api`/`web` services on the same ports.
 

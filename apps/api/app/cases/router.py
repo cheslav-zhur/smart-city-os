@@ -13,7 +13,7 @@ from app.cases.service import (
 from app.db import get_session
 from app.models import Case
 
-router = APIRouter()
+router = APIRouter(tags=["cases"])
 
 
 def _get_open_case(session: Session, case_id: int) -> Case:

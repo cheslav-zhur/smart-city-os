@@ -1,7 +1,7 @@
-import type { CaseRow } from './types'
+import type { CaseListItem } from './api/generated/models/caseListItem'
 
 type CaseListProps = {
-  cases: CaseRow[]
+  cases: CaseListItem[]
   selectedId: number | null
   onSelect: (id: number) => void
 }

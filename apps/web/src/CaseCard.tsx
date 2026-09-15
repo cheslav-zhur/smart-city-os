@@ -1,8 +1,9 @@
-import type { CaseRow, EventRow } from './types'
+import type { CaseListItem } from './api/generated/models/caseListItem'
+import type { EventTapeItem } from './api/generated/models/eventTapeItem'
 
 type CaseCardProps = {
-  caseRow: CaseRow | null
-  speeds: EventRow[]
+  caseRow: CaseListItem | null
+  speeds: EventTapeItem[]
   busy: boolean
   onApprove: () => void
   onReject: () => void

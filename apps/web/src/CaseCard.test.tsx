@@ -1,11 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { approveCase, rejectCase } from './api'
+import {
+  postApproveCasesCaseIdApprovePost,
+  postRejectCasesCaseIdRejectPost,
+} from './api/generated/cases/cases'
 import { CaseCard } from './CaseCard'
-import type { CaseRow } from './types'
+import type { CaseListItem } from './api/generated/models/caseListItem'
 
-const openCase: CaseRow = {
+const openCase: CaseListItem = {
   id: 7,
   segment: 'A',
   status: 'open',
@@ -19,6 +22,7 @@ beforeEach(() => {
   fetchMock.mockResolvedValue({
     ok: true,
     status: 200,
+    headers: new Headers({ 'content-type': 'application/json' }),
     json: async () => ({
       id: 7,
       status: 'approved',
@@ -41,10 +45,10 @@ test('Send drone posts approve', async () => {
       speeds={[]}
       busy={false}
       onApprove={() => {
-        void approveCase(openCase.id)
+        void postApproveCasesCaseIdApprovePost(openCase.id)
       }}
       onReject={() => {
-        void rejectCase(openCase.id)
+        void postRejectCasesCaseIdRejectPost(openCase.id)
       }}
     />,
   )
@@ -62,10 +66,10 @@ test('Dismiss posts reject', async () => {
       speeds={[]}
       busy={false}
       onApprove={() => {
-        void approveCase(openCase.id)
+        void postApproveCasesCaseIdApprovePost(openCase.id)
       }}
       onReject={() => {
-        void rejectCase(openCase.id)
+        void postRejectCasesCaseIdRejectPost(openCase.id)
       }}
     />,
   )

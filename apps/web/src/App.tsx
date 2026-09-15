@@ -1,14 +1,23 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { approveCase, fetchCases, fetchEvents, rejectCase } from './api'
+import {
+  getCasesCasesGet,
+  getGetCasesCasesGetQueryKey,
+  useGetCasesCasesGet,
+  usePostApproveCasesCaseIdApprovePost,
+  usePostRejectCasesCaseIdRejectPost,
+} from './api/generated/cases/cases'
+import { useGetEventsEventsGet } from './api/generated/events/events'
+import type { CaseDecisionOut } from './api/generated/models/caseDecisionOut'
+import type { CaseListItem } from './api/generated/models/caseListItem'
 import { CaseCard } from './CaseCard'
 import { CaseList } from './CaseList'
-import type { CaseDecision, CaseRow, EventRow } from './types'
 
 const POLL_MS = 2000
 const LAST_SPEED_COUNT = 8
 
 function nextSelectedId(
-  cases: CaseRow[],
+  cases: CaseListItem[],
   current: number | null,
   pinned: boolean,
 ): number | null {
@@ -18,7 +27,10 @@ function nextSelectedId(
   return cases.find((row) => row.status === 'open')?.id ?? current
 }
 
-function mergeDecision(cases: CaseRow[], decision: CaseDecision): CaseRow[] {
+function mergeDecision(
+  cases: CaseListItem[],
+  decision: CaseDecisionOut,
+): CaseListItem[] {
   return cases.map((row) =>
     row.id === decision.id
       ? {
@@ -31,50 +43,42 @@ function mergeDecision(cases: CaseRow[], decision: CaseDecision): CaseRow[] {
 }
 
 export default function App() {
-  const [cases, setCases] = useState<CaseRow[]>([])
-  const [speeds, setSpeeds] = useState<EventRow[]>([])
+  const queryClient = useQueryClient()
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [loadError, setLoadError] = useState(false)
   const [decideError, setDecideError] = useState(false)
   const pinnedRef = useRef(false)
 
+  const casesQuery = useGetCasesCasesGet({
+    query: { refetchInterval: POLL_MS },
+  })
+  const eventsQuery = useGetEventsEventsGet({
+    query: { refetchInterval: POLL_MS },
+  })
+
+  const cases = casesQuery.data?.data ?? []
+  const speeds = (eventsQuery.data?.data ?? []).slice(0, LAST_SPEED_COUNT)
+  const loadError = casesQuery.isError || eventsQuery.isError
+
   useEffect(() => {
-    let cancelled = false
-
-    async function poll() {
-      try {
-        const [nextCases, nextEvents] = await Promise.all([
-          fetchCases(),
-          fetchEvents(),
-        ])
-        if (cancelled) {
-          return
-        }
-        setLoadError(false)
-        setDecideError(false)
-        setCases(nextCases)
-        setSpeeds(nextEvents.slice(0, LAST_SPEED_COUNT))
-        setSelectedId((current) =>
-          nextSelectedId(nextCases, current, pinnedRef.current),
-        )
-      } catch {
-        if (!cancelled) {
-          setLoadError(true)
-        }
-      }
+    if (!casesQuery.isSuccess || !eventsQuery.isSuccess || casesQuery.data == null) {
+      return
     }
+    setDecideError(false)
+    const nextCases = casesQuery.data.data
+    setSelectedId((current) =>
+      nextSelectedId(nextCases, current, pinnedRef.current),
+    )
+  }, [
+    casesQuery.data,
+    casesQuery.dataUpdatedAt,
+    casesQuery.isSuccess,
+    eventsQuery.dataUpdatedAt,
+    eventsQuery.isSuccess,
+  ])
 
-    void poll()
-    const timer = window.setInterval(() => {
-      void poll()
-    }, POLL_MS)
-
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [])
+  const approveMutation = usePostApproveCasesCaseIdApprovePost()
+  const rejectMutation = usePostRejectCasesCaseIdRejectPost()
+  const busy = approveMutation.isPending || rejectMutation.isPending
 
   function selectCase(id: number) {
     pinnedRef.current = true
@@ -86,19 +90,34 @@ export default function App() {
       return
     }
     pinnedRef.current = true
-    setBusy(true)
     try {
-      const decision =
+      const result =
         kind === 'approve'
-          ? await approveCase(selectedId)
-          : await rejectCase(selectedId)
+          ? await approveMutation.mutateAsync({ caseId: selectedId })
+          : await rejectMutation.mutateAsync({ caseId: selectedId })
+      if (result.status !== 200) {
+        throw new Error(`decide ${result.status}`)
+      }
+      const decision = result.data
       setDecideError(false)
-      setCases((current) => mergeDecision(current, decision))
+      queryClient.setQueryData(
+        getGetCasesCasesGetQueryKey(),
+        (current: Awaited<ReturnType<typeof getCasesCasesGet>> | undefined) => {
+          if (current == null) {
+            return current
+          }
+          return {
+            ...current,
+            data: mergeDecision(current.data, decision),
+          }
+        },
+      )
+      await queryClient.invalidateQueries({
+        queryKey: getGetCasesCasesGetQueryKey(),
+      })
     } catch {
       // Poll will refresh status; a repeat POST is 409 once decided.
       setDecideError(true)
-    } finally {
-      setBusy(false)
     }
   }
 
