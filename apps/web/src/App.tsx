@@ -36,6 +36,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [decideError, setDecideError] = useState(false)
   const pinnedRef = useRef(false)
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function App() {
           return
         }
         setLoadError(false)
+        setDecideError(false)
         setCases(nextCases)
         setSpeeds(nextEvents.slice(0, LAST_SPEED_COUNT))
         setSelectedId((current) =>
@@ -90,9 +92,11 @@ export default function App() {
         kind === 'approve'
           ? await approveCase(selectedId)
           : await rejectCase(selectedId)
+      setDecideError(false)
       setCases((current) => mergeDecision(current, decision))
     } catch {
       // Poll will refresh status; a repeat POST is 409 once decided.
+      setDecideError(true)
     } finally {
       setBusy(false)
     }
@@ -106,6 +110,9 @@ export default function App() {
         <h1>Operations desk</h1>
         {loadError ? (
           <p className="error">Could not load cases or events.</p>
+        ) : null}
+        {decideError ? (
+          <p className="error">Could not apply approve or reject.</p>
         ) : null}
       </header>
       <div className="desk-body">

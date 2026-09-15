@@ -3,23 +3,17 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.audit.service import (
-    ACTION_APPROVE,
-    ACTION_REJECT,
-    WHY_APPROVE,
-    WHY_REJECT,
-    write_audit,
+from app.cases.schemas import CaseDecisionOut, CaseListItem
+from app.cases.service import (
+    CASE_OPEN,
+    approve_case,
+    list_cases,
+    reject_case,
 )
-from app.cases.schemas import CaseListItem
-from app.cases.service import CASE_OPEN, list_cases
 from app.db import get_session
-from app.drone.service import DRONE_IDLE, dispatch_after_approve
 from app.models import Case
 
 router = APIRouter()
-
-CASE_APPROVED = "approved"
-CASE_REJECTED = "rejected"
 
 
 def _get_open_case(session: Session, case_id: int) -> Case:
@@ -48,30 +42,24 @@ def get_cases(
 
 
 @router.post("/cases/{case_id}/approve")
-def approve_case(
+def post_approve(
     case_id: int, session: Annotated[Session, Depends(get_session)]
-) -> dict:
-    case = _get_open_case(session, case_id)
-    case.status = CASE_APPROVED
-    dispatch_after_approve(case)
-    write_audit(session, case.id, ACTION_APPROVE, WHY_APPROVE)
-    return {
-        "id": case.id,
-        "status": case.status,
-        "drone_status": case.drone_status,
-    }
+) -> CaseDecisionOut:
+    case = approve_case(session, _get_open_case(session, case_id))
+    return CaseDecisionOut(
+        id=case.id,
+        status=case.status,
+        drone_status=case.drone_status,
+    )
 
 
 @router.post("/cases/{case_id}/reject")
-def reject_case(
+def post_reject(
     case_id: int, session: Annotated[Session, Depends(get_session)]
-) -> dict:
-    case = _get_open_case(session, case_id)
-    case.status = CASE_REJECTED
-    case.drone_status = DRONE_IDLE
-    write_audit(session, case.id, ACTION_REJECT, WHY_REJECT)
-    return {
-        "id": case.id,
-        "status": case.status,
-        "drone_status": case.drone_status,
-    }
+) -> CaseDecisionOut:
+    case = reject_case(session, _get_open_case(session, case_id))
+    return CaseDecisionOut(
+        id=case.id,
+        status=case.status,
+        drone_status=case.drone_status,
+    )
