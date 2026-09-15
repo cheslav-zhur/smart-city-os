@@ -7,12 +7,18 @@ import {
 } from './api/generated/cases/cases'
 import { CaseCard } from './CaseCard'
 import type { CaseListItem } from './api/generated/models/caseListItem'
+import {
+  CASE_APPROVED,
+  CASE_OPEN,
+  DRONE_IDLE,
+  DRONE_ON_SITE,
+} from './domain'
 
 const openCase: CaseListItem = {
   id: 7,
   segment: 'A',
-  status: 'open',
-  drone_status: 'idle',
+  status: CASE_OPEN,
+  drone_status: DRONE_IDLE,
   rationale: null,
 }
 
@@ -25,8 +31,8 @@ beforeEach(() => {
     headers: new Headers({ 'content-type': 'application/json' }),
     json: async () => ({
       id: 7,
-      status: 'approved',
-      drone_status: 'on_site',
+      status: CASE_APPROVED,
+      drone_status: DRONE_ON_SITE,
     }),
   })
   vi.stubGlobal('fetch', fetchMock)

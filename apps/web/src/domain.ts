@@ -1,0 +1,33 @@
+/** Case lifecycle on the console card/list. Matches API CASE_* constants. */
+export type CaseStatus = 'open' | 'approved' | 'rejected'
+
+/** Drone stub status. Matches API DRONE_* constants. */
+export type DroneStatus = 'idle' | 'in_flight' | 'on_site'
+
+export const CASE_OPEN: CaseStatus = 'open'
+export const CASE_APPROVED: CaseStatus = 'approved'
+export const CASE_REJECTED: CaseStatus = 'rejected'
+
+export const DRONE_IDLE: DroneStatus = 'idle'
+export const DRONE_IN_FLIGHT: DroneStatus = 'in_flight'
+export const DRONE_ON_SITE: DroneStatus = 'on_site'
+
+export function isCaseStatus(value: string): value is CaseStatus {
+  return (
+    value === CASE_OPEN ||
+    value === CASE_APPROVED ||
+    value === CASE_REJECTED
+  )
+}
+
+export function isDroneStatus(value: string): value is DroneStatus {
+  return (
+    value === DRONE_IDLE ||
+    value === DRONE_IN_FLIGHT ||
+    value === DRONE_ON_SITE
+  )
+}
+
+export function formatDroneStatus(status: string): string {
+  return status.replaceAll('_', ' ')
+}

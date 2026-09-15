@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   applyTheme,
+  oppositeTheme,
   persistTheme,
   readStoredTheme,
   type DeskTheme,
@@ -52,7 +53,7 @@ export function ThemeToggle() {
   }, [theme])
 
   function toggle() {
-    const next: DeskTheme = theme === 'dark' ? 'light' : 'dark'
+    const next = oppositeTheme(theme)
     setTheme(next)
     persistTheme(next)
     applyTheme(next)

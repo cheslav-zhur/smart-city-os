@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { CaseListItem } from './api/generated/models/caseListItem'
 import type { EventTapeItem } from './api/generated/models/eventTapeItem'
+import type { DecideKind } from './decide'
+import { CASE_OPEN, formatDroneStatus } from './domain'
 import { StatusChip } from './StatusChip'
 import { formatRelativeTime, isCollapseSpeed } from './time'
-
-type DecideKind = 'approve' | 'reject'
 
 type CaseCardProps = {
   caseRow: CaseListItem | null
@@ -31,7 +31,7 @@ export function CaseCard({
   onReject,
 }: CaseCardProps) {
   const [nowMs, setNowMs] = useState(() => Date.now())
-  const canDecide = caseRow !== null && caseRow.status === 'open' && !busy
+  const canDecide = caseRow !== null && caseRow.status === CASE_OPEN && !busy
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -61,7 +61,7 @@ export function CaseCard({
             </span>
             <StatusChip status={caseRow.status} />
             <span className="rounded-full bg-slate-900/5 px-2.5 py-0.5 text-xs text-slate-600 dark:bg-white/5 dark:text-slate-300">
-              drone {caseRow.drone_status.replaceAll('_', ' ')}
+              drone {formatDroneStatus(caseRow.drone_status)}
             </span>
           </div>
 

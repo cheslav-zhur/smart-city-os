@@ -12,6 +12,8 @@ import type { CaseDecisionOut } from './api/generated/models/caseDecisionOut'
 import type { CaseListItem } from './api/generated/models/caseListItem'
 import { CaseCard } from './CaseCard'
 import { CaseList } from './CaseList'
+import type { DecideKind } from './decide'
+import { CASE_OPEN } from './domain'
 import { ThemeToggle } from './ThemeToggle'
 
 const POLL_MS = 2000
@@ -25,7 +27,7 @@ function nextSelectedId(
   if (pinned && current != null && cases.some((row) => row.id === current)) {
     return current
   }
-  return cases.find((row) => row.status === 'open')?.id ?? current
+  return cases.find((row) => row.status === CASE_OPEN)?.id ?? current
 }
 
 function mergeDecision(
@@ -87,7 +89,7 @@ export default function App() {
   const approveMutation = usePostApproveCasesCaseIdApprovePost()
   const rejectMutation = usePostRejectCasesCaseIdRejectPost()
   const busy = approveMutation.isPending || rejectMutation.isPending
-  const busyKind = approveMutation.isPending
+  const busyKind: DecideKind | null = approveMutation.isPending
     ? 'approve'
     : rejectMutation.isPending
       ? 'reject'
@@ -98,7 +100,7 @@ export default function App() {
     setSelectedId(id)
   }
 
-  async function decide(kind: 'approve' | 'reject') {
+  async function decide(kind: DecideKind) {
     if (selectedId == null) {
       return
     }

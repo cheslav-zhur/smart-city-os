@@ -1,4 +1,5 @@
 import type { CaseListItem } from './api/generated/models/caseListItem'
+import { formatDroneStatus } from './domain'
 import { StatusChip } from './StatusChip'
 
 type CaseListProps = {
@@ -68,7 +69,7 @@ export function CaseList({
               </div>
               <div className="mt-1.5 flex gap-3 text-xs text-slate-500 dark:text-slate-400">
                 <span>segment {row.segment}</span>
-                <span>{row.drone_status.replaceAll('_', ' ')}</span>
+                <span>{formatDroneStatus(row.drone_status)}</span>
               </div>
             </button>
           </li>
