@@ -41,6 +41,7 @@ def get_cases(
             segment=case.segment,
             status=case.status,
             drone_status=case.drone_status,
+            rationale=case.rationale,
         )
         for case in list_cases(session)
     ]

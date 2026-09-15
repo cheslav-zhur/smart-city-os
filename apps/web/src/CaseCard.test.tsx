@@ -10,6 +10,7 @@ const openCase: CaseRow = {
   segment: 'A',
   status: 'open',
   drone_status: 'idle',
+  rationale: null,
 }
 
 const fetchMock = vi.fn()

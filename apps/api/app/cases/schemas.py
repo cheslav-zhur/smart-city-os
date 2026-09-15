@@ -8,3 +8,4 @@ class CaseListItem(BaseModel):
     segment: str
     status: str
     drone_status: str
+    rationale: str | None

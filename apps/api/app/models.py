@@ -26,6 +26,7 @@ class Case(Base):
     segment: Mapped[str] = mapped_column(String(32))
     status: Mapped[str] = mapped_column(String(32), server_default="open")
     drone_status: Mapped[str] = mapped_column(String(32), server_default="idle")
+    rationale: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

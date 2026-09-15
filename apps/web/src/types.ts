@@ -3,6 +3,7 @@ export type CaseRow = {
   segment: string
   status: string
   drone_status: string
+  rationale: string | null
 }
 
 export type EventRow = {

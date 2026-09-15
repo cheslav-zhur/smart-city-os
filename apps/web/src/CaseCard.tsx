@@ -40,6 +40,9 @@ export function CaseCard({
             </div>
           </dl>
           <p className="proposal">Send a drone to look</p>
+          {caseRow.rationale ? (
+            <p className="rationale">{caseRow.rationale}</p>
+          ) : null}
           <div className="actions">
             <button type="button" disabled={!canDecide} onClick={onApprove}>
               Send drone

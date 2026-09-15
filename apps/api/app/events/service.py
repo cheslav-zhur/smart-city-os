@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.cases.service import SEGMENT_A, maybe_open_on_collapse
 from app.events.schemas import EventIn
+from app.llm.service import maybe_fill_rationale
 from app.models import Event
 
 
@@ -29,6 +30,8 @@ def ingest_event(session: Session, payload: EventIn) -> tuple[Event, int | None,
         return existing, None, True
 
     case = maybe_open_on_collapse(session, event.segment)
+    if case is not None:
+        maybe_fill_rationale(session, case)
     return event, case.id if case is not None else None, False
 
 

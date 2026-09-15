@@ -35,12 +35,19 @@ def test_collapse_ingest_appears_on_console_lists(client) -> None:
     body = cases.json()
     assert len(body) == 1
     item = body[0]
-    assert set(item.keys()) == {"id", "segment", "status", "drone_status"}
+    assert set(item.keys()) == {
+        "id",
+        "segment",
+        "status",
+        "drone_status",
+        "rationale",
+    }
     assert item == {
         "id": case_id,
         "segment": "A",
         "status": "open",
         "drone_status": "idle",
+        "rationale": None,
     }
 
     events = client.get("/events")

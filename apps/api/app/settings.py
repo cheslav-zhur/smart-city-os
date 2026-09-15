@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     database_url: str
     audit_actor: str = "demo-operator"
+    llm_api_key: str | None = None
 
     @property
     def sqlalchemy_url(self) -> str:
