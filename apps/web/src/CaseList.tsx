@@ -1,27 +1,47 @@
 import type { CaseListItem } from './api/generated/models/caseListItem'
+import { StatusChip } from './StatusChip'
 
 type CaseListProps = {
   cases: CaseListItem[]
   selectedId: number | null
   onSelect: (id: number) => void
+  loading?: boolean
 }
 
-function statusTone(status: string): string {
-  if (status === 'open') {
-    return 'text-teal-700 dark:text-teal-300'
-  }
-  if (status === 'approved') {
-    return 'text-slate-600 dark:text-slate-300'
-  }
-  return 'text-slate-500 dark:text-slate-400'
+function CaseListSkeleton() {
+  return (
+    <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-hidden="true">
+      {[0, 1, 2].map((key) => (
+        <li
+          key={key}
+          className="h-14 animate-pulse rounded-xl bg-slate-900/5 dark:bg-white/5"
+        />
+      ))}
+    </ul>
+  )
 }
 
-export function CaseList({ cases, selectedId, onSelect }: CaseListProps) {
+export function CaseList({
+  cases,
+  selectedId,
+  onSelect,
+  loading = false,
+}: CaseListProps) {
+  if (loading) {
+    return <CaseListSkeleton />
+  }
+
   if (cases.length === 0) {
     return (
-      <p className="m-0 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-        No cases yet. Run the simulator.
-      </p>
+      <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        <p className="m-0 font-medium text-slate-700 dark:text-slate-200">
+          No cases yet
+        </p>
+        <p className="mt-1.5 mb-0">
+          Run <code className="font-mono text-[0.8rem]">make sim</code> to send
+          the speed tape and open a collapse case.
+        </p>
+      </div>
     )
   }
 
@@ -33,24 +53,20 @@ export function CaseList({ cases, selectedId, onSelect }: CaseListProps) {
           <li key={row.id}>
             <button
               type="button"
-              className={`w-full cursor-pointer rounded-xl px-3.5 py-3 text-left transition ${
+              className={`w-full cursor-pointer rounded-xl px-3.5 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50 ${
                 selected
                   ? 'bg-teal-500/10 dark:bg-teal-400/10'
                   : 'hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.04]'
               }`}
               onClick={() => onSelect(row.id)}
             >
-              <div className="flex items-baseline justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium text-slate-900 dark:text-slate-50">
                   Case {row.id}
                 </span>
-                <span
-                  className={`text-xs font-medium tracking-wide ${statusTone(row.status)}`}
-                >
-                  {row.status}
-                </span>
+                <StatusChip status={row.status} size="sm" />
               </div>
-              <div className="mt-1 flex gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <div className="mt-1.5 flex gap-3 text-xs text-slate-500 dark:text-slate-400">
                 <span>segment {row.segment}</span>
                 <span>{row.drone_status.replaceAll('_', ' ')}</span>
               </div>

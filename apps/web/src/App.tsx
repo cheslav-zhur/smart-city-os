@@ -59,6 +59,13 @@ export default function App() {
   const cases = casesQuery.data?.data ?? []
   const speeds = (eventsQuery.data?.data ?? []).slice(0, LAST_SPEED_COUNT)
   const loadError = casesQuery.isError || eventsQuery.isError
+  const initialLoading =
+    (casesQuery.isLoading && casesQuery.data == null) ||
+    (eventsQuery.isLoading && eventsQuery.data == null)
+  const liveUpdating =
+    !initialLoading &&
+    !loadError &&
+    (casesQuery.isFetching || eventsQuery.isFetching)
 
   useEffect(() => {
     if (!casesQuery.isSuccess || !eventsQuery.isSuccess || casesQuery.data == null) {
@@ -80,6 +87,11 @@ export default function App() {
   const approveMutation = usePostApproveCasesCaseIdApprovePost()
   const rejectMutation = usePostRejectCasesCaseIdRejectPost()
   const busy = approveMutation.isPending || rejectMutation.isPending
+  const busyKind = approveMutation.isPending
+    ? 'approve'
+    : rejectMutation.isPending
+      ? 'reject'
+      : null
 
   function selectCase(id: number) {
     pinnedRef.current = true
@@ -134,16 +146,37 @@ export default function App() {
           <h1 className="m-0 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Operations desk
           </h1>
-          {loadError ? (
-            <p className="mt-3 mb-0 text-sm text-rose-700 dark:text-rose-300">
-              Could not load cases or events.
-            </p>
-          ) : null}
-          {decideError ? (
-            <p className="mt-3 mb-0 text-sm text-rose-700 dark:text-rose-300">
-              Could not apply approve or reject.
-            </p>
-          ) : null}
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+            {!loadError ? (
+              <p
+                className="m-0 flex items-center gap-2 text-slate-500 dark:text-slate-400"
+                aria-live="polite"
+              >
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${
+                    liveUpdating
+                      ? 'animate-pulse bg-teal-500'
+                      : 'bg-teal-600/70 dark:bg-teal-400/70'
+                  }`}
+                />
+                {initialLoading
+                  ? 'Loading…'
+                  : liveUpdating
+                    ? 'Updating…'
+                    : 'Live'}
+              </p>
+            ) : null}
+            {loadError ? (
+              <p className="m-0 text-rose-700 dark:text-rose-300">
+                Could not load cases or events.
+              </p>
+            ) : null}
+            {decideError ? (
+              <p className="m-0 text-rose-700 dark:text-rose-300">
+                Could not apply approve or reject.
+              </p>
+            ) : null}
+          </div>
         </div>
         <ThemeToggle />
       </header>
@@ -156,12 +189,16 @@ export default function App() {
             cases={cases}
             selectedId={selectedId}
             onSelect={selectCase}
+            loading={casesQuery.isLoading && casesQuery.data == null}
           />
         </aside>
         <CaseCard
           caseRow={selected}
           speeds={speeds}
           busy={busy}
+          busyKind={busyKind}
+          casesLoading={casesQuery.isLoading && casesQuery.data == null}
+          speedsLoading={eventsQuery.isLoading && eventsQuery.data == null}
           onApprove={() => {
             void decide('approve')
           }}

@@ -44,13 +44,14 @@ test('Send drone posts approve', async () => {
       caseRow={openCase}
       speeds={[]}
       busy={false}
+      busyKind={null}
       onApprove={() => {
         void postApproveCasesCaseIdApprovePost(openCase.id)
       }}
       onReject={() => {
         void postRejectCasesCaseIdRejectPost(openCase.id)
       }}
-    />,
+    />
   )
 
   await user.click(screen.getByRole('button', { name: 'Send drone' }))
@@ -65,13 +66,14 @@ test('Dismiss posts reject', async () => {
       caseRow={openCase}
       speeds={[]}
       busy={false}
+      busyKind={null}
       onApprove={() => {
         void postApproveCasesCaseIdApprovePost(openCase.id)
       }}
       onReject={() => {
         void postRejectCasesCaseIdRejectPost(openCase.id)
       }}
-    />,
+    />
   )
 
   await user.click(screen.getByRole('button', { name: 'Dismiss' }))
