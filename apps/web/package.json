@@ -9,7 +9,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "gen:api": "orval --config orval.config.ts"
+    "gen:api": "orval --config orval.config.ts",
+    "storybook": "storybook dev -p 6006 --host 0.0.0.0",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@tanstack/react-query": "5.102.8",
@@ -29,6 +31,16 @@
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
     "vite": "8.3.0",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "storybook": "^10.6.0",
+    "@storybook/react-vite": "^10.6.0",
+    "@chromatic-com/storybook": "latest",
+    "@storybook/addon-vitest": "^10.6.0",
+    "@storybook/addon-a11y": "^10.6.0",
+    "@storybook/addon-docs": "^10.6.0",
+    "@storybook/addon-mcp": "^10.6.0",
+    "@vitest/browser-playwright": "4.1.11",
+    "@vitest/coverage-v8": "4.1.11",
+    "playwright": "latest"
   }
 }
