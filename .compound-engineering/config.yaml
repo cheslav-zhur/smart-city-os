@@ -1,0 +1,5 @@
+# Compound Engineering -- tracked project config.
+# Shared across clones. Machine-local overrides live in config.local.yaml.
+#
+# Keep CE artifacts out of product docs/ (scope, ADR, MVP plan).
+docs_root: .compound-engineering/artifacts
