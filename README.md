@@ -80,7 +80,7 @@ Open http://localhost:5173 → case card → approve or reject → check an `aud
 
 MVP plan: U1–U7 done. Progress lives in [`docs/plans/01-mvp.md`](docs/plans/01-mvp.md) — do not duplicate the table here.
 
-[GitHub Issues](https://github.com/happylolonly/smart-city-os/issues) are an index of large tasks (a plan cut) and named units — currently [#1 v1 duty desk first cut](https://github.com/happylolonly/smart-city-os/issues/1). The contract and status stay in [`docs/`](docs/README.md): scope, ADRs, plans. An issue is a pointer, not a second spec.
+[GitHub Issues](https://github.com/happylolonly/smart-city-os/issues) are an index of large tasks and named units. The current cut is [#1](https://github.com/happylolonly/smart-city-os/issues/1); which units already have a ticket is in the plan’s Issues table. The contract and status stay in [`docs/`](docs/README.md) and that plan. An issue is a pointer, not a second spec.
 
 ## Docs
 

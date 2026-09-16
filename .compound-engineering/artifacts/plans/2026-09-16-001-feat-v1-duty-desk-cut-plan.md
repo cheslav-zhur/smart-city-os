@@ -263,6 +263,20 @@ U1 schema → U2 rules and U3 queue can proceed after U1 (U3 must not wait on U2
 
 ## Implementation Units
 
+GitHub issues are an index. Status stays in this file.
+
+| Unit | Issue |
+|------|-------|
+| U1 | [#3](https://github.com/happylolonly/smart-city-os/issues/3) |
+| U2 | [#2](https://github.com/happylolonly/smart-city-os/issues/2) |
+| U3 | [#4](https://github.com/happylolonly/smart-city-os/issues/4) |
+| U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) |
+| U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) |
+| U6 | not opened — say so before writing this unit; do not open unasked |
+| U7 | not opened — say so before writing this unit; do not open unasked |
+
+Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Close a unit issue only after the CTO accepts it and Status is marked here.
+
 ### U1. Schema for kinds, jobs, and opinions
 
 - **Goal:** Persist event kind, job rows, two opinion columns, and `trigger_kind` so later units do not fight the MVP schema.
