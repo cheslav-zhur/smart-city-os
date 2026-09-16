@@ -9,6 +9,7 @@ from app.main import app
 @pytest.fixture
 def client() -> TestClient:
     with SessionLocal() as session:
+        session.execute(text("DELETE FROM jobs"))
         session.execute(text("DELETE FROM audit_entries"))
         session.execute(text("DELETE FROM cases"))
         session.execute(text("DELETE FROM events"))
