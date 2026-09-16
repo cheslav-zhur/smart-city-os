@@ -42,7 +42,8 @@ Do not invoke these roles because a file is open, a test failed in passing, or �
 
 ## How we work
 
-- Build the current plan **one unit at a time** (`docs/plans/01-mvp.md`: U1 → U7). Finish a unit (code + named tests + check) before starting the next. After the CTO accepts a unit, mark its **Status** in that plan. Do not mark `done` unasked.
+- Build the current plan **one unit at a time**. Finish a unit (code + named tests + check) before starting the next. After the CTO accepts a unit, mark its **Status** in that plan. Do not mark `done` unasked.
+- **GitHub Issues** are an index, not the contract. Scope, ADRs, and the plan stay the source of truth and the status. Open one issue for a large task (a plan cut). Open a unit issue only when the CTO names that unit. The issue body is a link to the plan, not a copy of the spec. An open issue does not authorize starting work. After the CTO accepts: mark **Status** in the plan first, then close the matching issue. Do not put `Closes #n` / `Fixes #n` in commits — that would close the ticket before the CTO accepts.
 - **Talk to the user** at unit boundaries: what this unit does, what you are about to write, what you need confirmed (package install, schema shape, copy). Do not silently batch the whole plan.
 - If a choice is still open in the plan (thresholds, copy, drone table vs columns), ask instead of inventing a durable default.
 - Console HTTP types/hooks come from FastAPI OpenAPI via **orval** ([ADR 0007](docs/adr/0007-console-openapi-client.md)). Do not hand-copy paths into `apps/web` or add a second generator. After an API schema change: dump OpenAPI → `pnpm gen:api` → commit dump + generated output.

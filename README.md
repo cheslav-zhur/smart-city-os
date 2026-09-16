@@ -24,7 +24,7 @@ The model may draft a proposal. It has no `fly()`. Application code changes dron
 
 ## Development
 
-Reopen the folder in a container (Cursor: **Dev Containers: Reopen in Container**). Compose starts Postgres 16 and a workspace with Python 3.12 and Node 24.
+Reopen the folder in a container (Cursor: **Dev Containers: Reopen in Container**). Compose starts Postgres 16 and a workspace with Python 3.12 and Node 24. `gh` comes from the Dev Containers `github-cli` feature and uses host `GH_TOKEN`.
 
 `DATABASE_URL` is `postgresql://city:city@postgres:5432/city`. Copy `.env.example` to `.env` when you add a model key; the loop must run without one.
 
@@ -79,6 +79,8 @@ Open http://localhost:5173 → case card → approve or reject → check an `aud
 ## Status
 
 MVP plan: U1–U7 done. Progress lives in [`docs/plans/01-mvp.md`](docs/plans/01-mvp.md) — do not duplicate the table here.
+
+[GitHub Issues](https://github.com/happylolonly/smart-city-os/issues) are an index of large tasks (a plan cut) and named units — currently [#1 v1 duty desk first cut](https://github.com/happylolonly/smart-city-os/issues/1). The contract and status stay in [`docs/`](docs/README.md): scope, ADRs, plans. An issue is a pointer, not a second spec.
 
 ## Docs
 
