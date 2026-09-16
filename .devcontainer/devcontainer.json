@@ -10,6 +10,13 @@
     "8000": { "label": "api" },
     "5432": { "label": "postgres" }
   },
+  "remoteEnv": {
+    "DATABASE_URL": "postgresql://city:city@postgres:5432/city",
+    "GH_TOKEN": "${localEnv:GH_TOKEN}"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   "customizations": {
     "vscode": {
       "settings": {
@@ -20,8 +27,5 @@
         "ms-python.vscode-pylance"
       ]
     }
-  },
-  "remoteEnv": {
-    "DATABASE_URL": "postgresql://city:city@postgres:5432/city"
   }
 }
