@@ -35,7 +35,7 @@ The duty minute is still: facts arrive, something is worth a case, a human gates
 - Two in-product model roles now: dispatcher then critic, one pass each, both always run. Traffic role later. `(session-settled: user-directed — chosen over dispatcher-only and over three roles now: second voice visible before adding traffic)` Governs R7, R8.
 - Playbook is a few markdown files the model may search. `(session-settled: user-approved — chosen over skipping playbook in this cut: model must not invent procedure from nothing)` Governs R11.
 - Resident text line and drone photo/vision are out of this plan. `(session-settled: user-directed — chosen over including both in this plan: keep the cut on roles, queue, and playbook)` Governs scope boundaries.
-- Tests ship with units; TDD (red-first) does not start on U1. `(session-settled: user-directed — chosen over TDD from the first unit: maybe mid-v1)` Governs execution notes.
+- Tests ship with units; TDD (red-first) does not start on V1-U1. `(session-settled: user-directed — chosen over TDD from the first unit: maybe mid-v1)` Governs execution notes.
 
 ### Requirements
 
@@ -139,14 +139,14 @@ Compose up. Worker running. Sim posts a mixed tape. Console shows list, card, tw
 
 ### Key Technical Decisions
 
-- KTD1. Postgres job table claimed with `SELECT … FOR UPDATE SKIP LOCKED`, not Redis or Celery. `(session-settled: user-directed — chosen over Redis: v1 volume does not justify a second store)` Instantiates R5, R6. Enqueue in the same transaction as case insert. `UNIQUE (jobs.case_id)` — one row per case; retry updates that row. Claim in a short transaction: `pending` or (`running` and expired lease); bump `lease_version` and `attempts`; commit before the graph. Complete in a later short transaction: `UPDATE jobs … WHERE id=:job AND lease_version=:claimed AND status='running'` in the same transaction as the case CAS in KTD5. Reaper is this steal in U3, not a later unit and not Redis.
+- KTD1. Postgres job table claimed with `SELECT … FOR UPDATE SKIP LOCKED`, not Redis or Celery. `(session-settled: user-directed — chosen over Redis: v1 volume does not justify a second store)` Instantiates R5, R6. Enqueue in the same transaction as case insert. `UNIQUE (jobs.case_id)` — one row per case; retry updates that row. Claim in a short transaction: `pending` or (`running` and expired lease); bump `lease_version` and `attempts`; commit before the graph. Complete in a later short transaction: `UPDATE jobs … WHERE id=:job AND lease_version=:claimed AND status='running'` in the same transaction as the case CAS in KTD5. Reaper is this steal in V1-U3, not a later unit and not Redis.
 - KTD2. LangGraph `StateGraph` with nodes dispatcher then critic. Pin `langgraph==1.2.11` (needs CTO ok before install). Do not use `create_react_agent` / `create_agent`, `interrupt()`, or a Postgres checkpointer in this cut. Do not bind a `fly` tool that returns rejected. Bound names are the allowlist. Instantiates R6, R7, R9.
 - KTD3. Two nullable text columns on `cases`: `dispatcher_opinion`, `critic_opinion`. Stop exposing `rationale` on the console API. Keep the `rationale` column unused for one migration cycle. Do not dual-write `rationale`. Instantiates R7.
 - KTD4. Case `status` stays `open | approved | rejected`. `drone_status` stays `idle | in_flight | on_site`. Map v1 words onto these fields: waiting-on-human = `open`; drone-in-flight = `drone_status`; closed = approved or rejected. Instantiates R9.
 - KTD5. Decide: `UPDATE cases … WHERE id=:id AND status='open'`; zero rows → 409. Same transaction: operator audit and cancel `pending` jobs only. Do not cancel `running` from decide. Persist: `write_opinion` updates graph state only. After the graph returns, one transaction writes both opinion columns (or neither), model/tool audit, and the job terminal status, with KTD1 fencing plus `WHERE cases.status='open'`. Zero case rows → job `cancelled`, no opinions, no drone change. Instantiates R10, R7.
 - KTD6. `GET /cases/{id}/audit` returns append-only `{id, actor, action, why, created_at}`. Operator actor stays `AUDIT_ACTOR`. Model/tool actors are `dispatcher`, `critic`, or `tool:<name>`. Model/tool rows only in the fenced persist transaction. Instantiates R12.
 - KTD7. Playbooks live in `apps/api/playbooks/*.md`. Tool `search_playbook` is case-insensitive substring over filename and body, top 3 chunks, max 500 characters each. Instantiates R11.
-- KTD8. Starter rule constants (tunable, not ADR): `crash_drop` = last two samples, previous speed > 0 and current ≤ 0.5 (today’s collapse). `speeding` = last sample ≥ 80. `jam` = last three samples all ≤ 5 and at least one of the previous three > 5. Kind is stored on the event; `trigger_kind` on the case records which rule opened it (nullable until U2). Instantiates R2, R4.
+- KTD8. Starter rule constants (tunable, not ADR): `crash_drop` = last two samples, previous speed > 0 and current ≤ 0.5 (today’s collapse). `speeding` = last sample ≥ 80. `jam` = last three samples all ≤ 5 and at least one of the previous three > 5. Kind is stored on the event; `trigger_kind` on the case records which rule opened it (nullable until V1-U2). Instantiates R2, R4.
 - KTD9. Confident model proposal means both opinion columns are non-null after a fenced persist with a key. Not `jobs.status=done`. The approve button stays enabled on every `open` case (ADR 0002). Instantiates R8, R9.
 - KTD10. Worker entry is `python -m app.worker` (`apps/api/app/worker.py` thin `__main__`, loop in `apps/api/app/jobs/`). Compose `worker` service and `make worker`. Not FastAPI `BackgroundTasks`. Instantiates R6.
 - KTD11. Job statuses: `pending`, `running`, `done`, `failed`, `cancelled`. Terminal: done, failed, cancelled. Check constraint on those strings. Instantiates R5, R6.
@@ -210,18 +210,18 @@ Job states never move `cases.status` or `drone_status`. Per KTD5, persist is bot
 - Worker may claim jobs, run the graph, and persist opinions plus model/tool audit. It must not import `app.drone.service` or call approve/reject.
 - `POST /events` may add `kind`. Duplicate event must not create a second job. Worker down must not 5xx ingest. `/health` stays a Postgres ping.
 - `GET /events` includes `kind` so the tape is honest (F4). Do not expose job or lease fields on console DTOs.
-- `GET /cases` drops `rationale` and adds the two opinion fields in U6 with `make openapi` in that same unit.
+- `GET /cases` drops `rationale` and adds the two opinion fields in V1-U6 with `make openapi` in that same unit.
 - `GET /cases/{id}/audit` is new. Jobs have no HTTP API.
 - Dangerous effect is changing `status` / `drone_status`, not a string named `fly`.
 - Pre-v1 open cases are not backfilled with jobs. They stay approvable and jobless.
 
 ### Risks and Dependencies
 
-- HITL vs in-flight job: decide uses KTD5; persist uses KTD1 fencing. Mitigation: tests in U3 that claim, then approve, then persist.
-- Two open cases on one segment: Python-only today. Mitigation: partial unique on `cases(segment) WHERE status='open'` in U1; savepoint around case+job in U3 so a unique miss does not roll back the event.
-- Stuck `running` without steal: dead worker leaves a permanent running row. Mitigation: expired-lease claim in U3.
+- HITL vs in-flight job: decide uses KTD5; persist uses KTD1 fencing. Mitigation: tests in V1-U3 that claim, then approve, then persist.
+- Two open cases on one segment: Python-only today. Mitigation: partial unique on `cases(segment) WHERE status='open'` in V1-U1; savepoint around case+job in V1-U3 so a unique miss does not roll back the event.
+- Stuck `running` without steal: dead worker leaves a permanent running row. Mitigation: expired-lease claim in V1-U3.
 - MVP rows on migrate: `events.kind` default `crash_drop`; `trigger_kind` nullable; do not drop `rationale`.
-- Package pin `langgraph==1.2.11` needs CTO ok before U5. Do not add Redis, Celery, or checkpoint-postgres.
+- Package pin `langgraph==1.2.11` needs CTO ok before V1-U5. Do not add Redis, Celery, or checkpoint-postgres.
 - Lease/reaper is a hole inside the Postgres queue, not a reason to switch stores. KTD1 stays.
 
 ### Assumptions
@@ -253,7 +253,7 @@ Product Contract unchanged after bootstrap. No upstream requirements-only unifie
 
 ### Sequencing
 
-U1 schema → U2 rules and U3 queue can proceed after U1 (U3 must not wait on U2). U4 playbook after U1. U5 graph after U3 and U4. U6 console after U1 and KTD6 (can land before U5 with empty opinions). U7 run path after U3 (worker) and U2 (kinds on the tape).
+V1-U1 schema → V1-U2 rules and V1-U3 queue can proceed after V1-U1 (V1-U3 must not wait on V1-U2). V1-U4 playbook after V1-U1. V1-U5 graph after V1-U3 and V1-U4. V1-U6 console after V1-U1 and KTD6 (can land before V1-U5 with empty opinions). V1-U7 run path after V1-U3 (worker) and V1-U2 (kinds on the tape).
 
 ### Sources and Research
 
@@ -263,21 +263,21 @@ U1 schema → U2 rules and U3 queue can proceed after U1 (U3 must not wait on U2
 
 ## Implementation Units
 
-GitHub issues are an index. Status stays in this file.
+GitHub issues are an index. Status stays in this file. Unit ids for this cut are `V1-U1`–`V1-U7`. Bare `U1`–`U7` are the done MVP units in `docs/plans/01-mvp.md`.
 
 | Unit | Issue |
 |------|-------|
-| U1 | [#3](https://github.com/happylolonly/smart-city-os/issues/3) |
-| U2 | [#2](https://github.com/happylolonly/smart-city-os/issues/2) |
-| U3 | [#4](https://github.com/happylolonly/smart-city-os/issues/4) |
-| U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) |
-| U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) |
-| U6 | not opened — say so before writing this unit; do not open unasked |
-| U7 | not opened — say so before writing this unit; do not open unasked |
+| V1-U1 | [#3](https://github.com/happylolonly/smart-city-os/issues/3) |
+| V1-U2 | [#2](https://github.com/happylolonly/smart-city-os/issues/2) |
+| V1-U3 | [#4](https://github.com/happylolonly/smart-city-os/issues/4) |
+| V1-U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) |
+| V1-U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) |
+| V1-U6 | not opened — say so before writing this unit; do not open unasked |
+| V1-U7 | not opened — say so before writing this unit; do not open unasked |
 
 Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit commits end with `Closes #n`. Push to `main` only after the CTO accepts the unit and Status is marked here; that push closes the issue.
 
-### U1. Schema for kinds, jobs, and opinions
+### V1-U1. Schema for kinds, jobs, and opinions
 
 - **Goal:** Persist event kind, job rows, two opinion columns, and `trigger_kind` so later units do not fight the MVP schema.
 - **Requirements:** R2, R3, R5, R7
@@ -302,11 +302,11 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - Error: missing FK `case_id` fails.
 - **Verification:** `make migrate` then `make test-api` includes the new schema test.
 
-### U2. Event kinds and opening rules
+### V1-U2. Event kinds and opening rules
 
 - **Goal:** Speeding and jam can open a case by code rule. Collapse still works. At most one open case per segment across kinds.
 - **Requirements:** R2, R3, R4
-- **Dependencies:** U1
+- **Dependencies:** V1-U1
 - **Files:**
   - `apps/api/app/events/schemas.py`
   - `apps/api/app/events/service.py`
@@ -317,7 +317,7 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   1. Accept `kind` on `EventIn` with the three values. Default `crash_drop` if omitted so old sim clients still work.
   2. Keep collapse for `crash_drop`. Add speeding and jam using KTD8 constants.
   3. If an `open` case exists for the segment, persist the event and return without a new case.
-  4. Do not call the model. Job enqueue is U3.
+  4. Do not call the model. Job enqueue is V1-U3.
 - **Patterns to follow:** `maybe_open_on_collapse` and `test_ingest.py` collapse sequence.
 - **Test scenarios:**
   - Happy: crash_drop collapse opens one case with `trigger_kind=crash_drop`. Covers AE3.
@@ -327,11 +327,11 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - Error: unknown kind is 422.
 - **Verification:** ingest tests green without LLM key.
 
-### U3. Job enqueue, worker stub, ingest off the model path
+### V1-U3. Job enqueue, worker stub, ingest off the model path
 
 - **Goal:** Case open enqueues a job. HTTP ingest never calls the LLM. A worker can claim and complete a stub job. Decide cancels leftover work per KTD5.
 - **Requirements:** R1, R5, R6, R10
-- **Dependencies:** U1
+- **Dependencies:** V1-U1
 - **Files:**
   - `apps/api/app/events/service.py`
   - `apps/api/app/jobs/service.py`
@@ -345,9 +345,9 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   1. Remove `maybe_fill_rationale` from `ingest_event`. Per KTD12 the API must not fill opinions.
   2. When a case is created, insert a `pending` job in the same commit. Use a savepoint around case+job so a unique miss does not roll back the event.
   3. Duplicate `event_id` does not insert a second job.
-  4. Worker: KTD1 claim (including expired `running`). No key while still `open` → job `done`, empty opinions. Stub persist uses KTD5 both-or-neither. Graph is U5.
+  4. Worker: KTD1 claim (including expired `running`). No key while still `open` → job `done`, empty opinions. Stub persist uses KTD5 both-or-neither. Graph is V1-U5.
   5. Approve/reject: KTD5 SQL CAS, 409 on zero rows, cancel `pending` only.
-- **Execution note:** Named tests with the unit. Not red-first. Lease steal lands here, not in U5.
+- **Execution note:** Named tests with the unit. Not red-first. Lease steal lands here, not in V1-U5.
 - **Patterns to follow:** ingest idempotency (`IntegrityError` then re-select). HITL 404/409.
 - **Test scenarios:**
   - Happy: collapse ingest returns before any model; a job row exists. Covers AE1, AE2.
@@ -358,11 +358,11 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - Error: second concurrent decide is 409 via SQL CAS.
 - **Verification:** `test_llm_stub.py` proves ingest does not fill the card. `test_jobs.py` proves enqueue, steal, and leftover persist.
 
-### U4. Playbook files and search tool
+### V1-U4. Playbook files and search tool
 
 - **Goal:** Deterministic playbook search the graph can call.
 - **Requirements:** R11
-- **Dependencies:** U1
+- **Dependencies:** V1-U1
 - **Files:**
   - `apps/api/playbooks/crash-look.md`
   - `apps/api/playbooks/speeding.md`
@@ -379,11 +379,11 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - Error: missing playbooks dir returns empty list, no crash.
 - **Verification:** `test_playbook.py` does not need Postgres if search is pure files; if it uses settings paths, keep it in pytest with the rest.
 
-### U5. StateGraph dispatcher and critic
+### V1-U5. StateGraph dispatcher and critic
 
 - **Goal:** Worker runs a two-node graph with allowlisted tools, timeouts, and model/tool audit.
 - **Requirements:** R6, R7, R8, R9, R11, R12
-- **Dependencies:** U3, U4
+- **Dependencies:** V1-U3, V1-U4
 - **Files:**
   - `apps/api/pyproject.toml` (after CTO ok)
   - `apps/api/app/llm/` (graph, tools, replace inline stub)
@@ -408,11 +408,11 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - Integration: case already approved → job does not write. Covers AE6.
 - **Verification:** `test_agents.py` plus existing HITL tests.
 
-### U6. Console opinions, audit, orval
+### V1-U6. Console opinions, audit, orval
 
 - **Goal:** Card shows two opinions and audit. Buttons still only on `open`.
 - **Requirements:** R12, R13
-- **Dependencies:** U1
+- **Dependencies:** V1-U1
 - **Files:**
   - `apps/api/app/cases/schemas.py`
   - `apps/api/app/cases/router.py`
@@ -437,11 +437,11 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - Integration: card test — approve/reject still fire the generated mutations.
 - **Verification:** `make test-api` and `pnpm test` in `apps/web`. Manual: after sim, card shows slots and buttons.
 
-### U7. Simulator kinds, worker run path, ADR
+### V1-U7. Simulator kinds, worker run path, ADR
 
 - **Goal:** Documented demo path runs api, worker, web, postgres, and a mixed tape. Lock the first-cut choices in an ADR.
 - **Requirements:** R6, R14
-- **Dependencies:** U2, U3
+- **Dependencies:** V1-U2, V1-U3
 - **Files:**
   - `apps/sim/tape.py`
   - `apps/sim/run.py`
@@ -477,7 +477,7 @@ No live LLM in CI. Do not add `release:validate`.
 
 **Global**
 
-- All units U1–U7 landed or explicitly deferred by the CTO.
+- All units V1-U1–V1-U7 landed or explicitly deferred by the CTO.
 - Ingest does not call the model on the request path.
 - No fly tool. No Redis. No third role. No resident line. No drone photo.
 - Abandoned experiment code is not in the diff.
@@ -485,13 +485,13 @@ No live LLM in CI. Do not add `release:validate`.
 
 **Per unit**
 
-- U1: migration applies on a clean DB; schema test green.
-- U2: three kinds can open; second kind does not double-open.
-- U3: job row on case open; no-key worker; expired-lease steal; leftover persist is a no-op.
-- U4: playbook search tests green.
-- U5: two opinions from stubbed graph; timeout/no-key fallback; allowlist test.
-- U6: card shows two opinions and audit; buttons on `open` only.
-- U7: README run path includes worker; ADR 0008 accepted in `docs/adr/README.md`.
+- V1-U1: migration applies on a clean DB; schema test green.
+- V1-U2: three kinds can open; second kind does not double-open.
+- V1-U3: job row on case open; no-key worker; expired-lease steal; leftover persist is a no-op.
+- V1-U4: playbook search tests green.
+- V1-U5: two opinions from stubbed graph; timeout/no-key fallback; allowlist test.
+- V1-U6: card shows two opinions and audit; buttons on `open` only.
+- V1-U7: README run path includes worker; ADR 0008 accepted in `docs/adr/README.md`.
 
 ## Appendix
 
