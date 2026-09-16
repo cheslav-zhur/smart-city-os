@@ -275,7 +275,7 @@ GitHub issues are an index. Status stays in this file.
 | U6 | not opened — say so before writing this unit; do not open unasked |
 | U7 | not opened — say so before writing this unit; do not open unasked |
 
-Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Close a unit issue only after the CTO accepts it and Status is marked here.
+Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit commits end with `Closes #n`. Push to `main` only after the CTO accepts the unit and Status is marked here; that push closes the issue.
 
 ### U1. Schema for kinds, jobs, and opinions
 
