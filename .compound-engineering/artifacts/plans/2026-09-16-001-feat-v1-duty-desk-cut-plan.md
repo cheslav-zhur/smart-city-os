@@ -270,7 +270,7 @@ GitHub issues are an index. Status stays in this file. Unit ids for this cut are
 | V1-U1 | [#3](https://github.com/happylolonly/smart-city-os/issues/3) | done |
 | V1-U2 | [#2](https://github.com/happylolonly/smart-city-os/issues/2) | done |
 | V1-U3 | [#4](https://github.com/happylolonly/smart-city-os/issues/4) | done |
-| V1-U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) | |
+| V1-U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) | done |
 | V1-U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) | |
 | V1-U6 | not opened — say so before writing this unit; do not open unasked | |
 | V1-U7 | not opened — say so before writing this unit; do not open unasked | |
@@ -366,6 +366,7 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
 
 ### V1-U4. Playbook files and search tool
 
+- **Status:** done
 - **Goal:** Deterministic playbook search the graph can call.
 - **Requirements:** R11
 - **Dependencies:** V1-U1
