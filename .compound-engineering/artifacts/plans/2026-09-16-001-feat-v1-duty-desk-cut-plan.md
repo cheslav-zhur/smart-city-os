@@ -265,20 +265,21 @@ V1-U1 schema → V1-U2 rules and V1-U3 queue can proceed after V1-U1 (V1-U3 must
 
 GitHub issues are an index. Status stays in this file. Unit ids for this cut are `V1-U1`–`V1-U7`. Bare `U1`–`U7` are the done MVP units in `docs/plans/01-mvp.md`.
 
-| Unit | Issue |
-|------|-------|
-| V1-U1 | [#3](https://github.com/happylolonly/smart-city-os/issues/3) |
-| V1-U2 | [#2](https://github.com/happylolonly/smart-city-os/issues/2) |
-| V1-U3 | [#4](https://github.com/happylolonly/smart-city-os/issues/4) |
-| V1-U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) |
-| V1-U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) |
-| V1-U6 | not opened — say so before writing this unit; do not open unasked |
-| V1-U7 | not opened — say so before writing this unit; do not open unasked |
+| Unit | Issue | Status |
+|------|-------|--------|
+| V1-U1 | [#3](https://github.com/happylolonly/smart-city-os/issues/3) | done |
+| V1-U2 | [#2](https://github.com/happylolonly/smart-city-os/issues/2) | done |
+| V1-U3 | [#4](https://github.com/happylolonly/smart-city-os/issues/4) | done |
+| V1-U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) | |
+| V1-U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) | |
+| V1-U6 | not opened — say so before writing this unit; do not open unasked | |
+| V1-U7 | not opened — say so before writing this unit; do not open unasked | |
 
-Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit commits end with `Closes #n`. Push to `main` only after the CTO accepts the unit and Status is marked here; that push closes the issue.
+Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit commits end with `Closes #n`. Mark **Status** here in the same step as the unit commit. Push to `main` only when the CTO asks; that push closes the issue.
 
 ### V1-U1. Schema for kinds, jobs, and opinions
 
+- **Status:** done
 - **Goal:** Persist event kind, job rows, two opinion columns, and `trigger_kind` so later units do not fight the MVP schema.
 - **Requirements:** R2, R3, R5, R7
 - **Dependencies:** none
@@ -304,6 +305,7 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
 
 ### V1-U2. Event kinds and opening rules
 
+- **Status:** done
 - **Goal:** Speeding and jam can open a case by code rule. Collapse still works. At most one open case per segment across kinds.
 - **Requirements:** R2, R3, R4
 - **Dependencies:** V1-U1
@@ -332,6 +334,7 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
 
 ### V1-U3. Job enqueue, worker stub, ingest off the model path
 
+- **Status:** done
 - **Goal:** Case open enqueues a job. HTTP ingest never calls the LLM. A worker can claim and complete a stub job. Decide cancels leftover work per KTD5.
 - **Requirements:** R1, R5, R6, R10
 - **Dependencies:** V1-U1

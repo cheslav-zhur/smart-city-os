@@ -42,10 +42,10 @@ Do not invoke these roles because a file is open, a test failed in passing, or �
 
 ## How we work
 
-- Build the current plan **one unit at a time**. Finish a unit (code + named tests + check) before starting the next. After the CTO accepts a unit, mark its **Status** in that plan. Do not mark `done` unasked.
+- Build the current plan **one unit at a time**. Finish a unit (code + named tests + check) before starting the next. When the CTO asks to commit a unit, mark its **Status** in that plan in the same step. Do not mark `done` without a unit commit.
 - **GitHub Issues** are an index, not the contract. Scope, ADRs, and the plan stay the source of truth and the status. Open one issue for a large task (a plan cut). Open a unit issue only when the CTO names that unit. The issue body is a link to the plan, not a copy of the spec. An open issue does not authorize starting work.
 - **Before starting a unit:** if that unit has no GitHub issue, say so and wait. Do not open one unasked. This cut: V1-U1–V1-U5 are sub-issues of #1; V1-U6 and V1-U7 are not on GitHub yet (see the plan’s Issues index). MVP units stay `U1`–`U7` in `docs/plans/01-mvp.md`.
-- **After the CTO accepts a unit:** mark **Status** in the plan first, then push. The unit commit must end with `Closes #n`. GitHub closes that issue only when the commit reaches `main`, not on a local commit. Do not push before acceptance. Do not `gh issue close` unless they ask; the keyword is the close path.
+- **On the unit commit:** mark **Status** in the plan (same commit if the plan file is in the tree; otherwise a follow-up). Then push only when the CTO asks. The unit commit must end with `Closes #n`. GitHub closes that issue only when the commit reaches `main`, not on a local commit. Do not `gh issue close` unless they ask; the keyword is the close path.
 - **Talk to the user** at unit boundaries: what this unit does, what you are about to write, what you need confirmed (package install, schema shape, copy). Do not silently batch the whole plan.
 - If a choice is still open in the plan (thresholds, copy, drone table vs columns), ask instead of inventing a durable default.
 - Console HTTP types/hooks come from FastAPI OpenAPI via **orval** ([ADR 0007](docs/adr/0007-console-openapi-client.md)). Do not hand-copy paths into `apps/web` or add a second generator. After an API schema change: dump OpenAPI → `pnpm gen:api` → commit dump + generated output.
