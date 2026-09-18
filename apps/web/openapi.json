@@ -286,6 +286,16 @@
             "type": "string",
             "format": "date-time",
             "title": "Recorded At"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "crash_drop",
+              "speeding",
+              "jam"
+            ],
+            "title": "Kind",
+            "default": "crash_drop"
           }
         },
         "type": "object",
@@ -307,6 +317,15 @@
             "type": "string",
             "title": "Segment"
           },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "crash_drop",
+              "speeding",
+              "jam"
+            ],
+            "title": "Kind"
+          },
           "speed": {
             "type": "number",
             "title": "Speed"
@@ -321,11 +340,12 @@
         "required": [
           "event_id",
           "segment",
+          "kind",
           "speed",
           "recorded_at"
         ],
         "title": "EventTapeItem",
-        "description": "Console tape row: speeds only, not the ingest echo."
+        "description": "Console tape row: speed and kind, not the ingest echo."
       },
       "HTTPValidationError": {
         "properties": {

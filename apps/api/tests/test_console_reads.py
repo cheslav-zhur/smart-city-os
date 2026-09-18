@@ -55,7 +55,14 @@ def test_collapse_ingest_appears_on_console_lists(client) -> None:
     tape = events.json()
     assert [row["event_id"] for row in tape] == ["sim-011", "sim-010"]
     for row in tape:
-        assert set(row.keys()) == {"event_id", "segment", "speed", "recorded_at"}
+        assert set(row.keys()) == {
+            "event_id",
+            "segment",
+            "kind",
+            "speed",
+            "recorded_at",
+        }
         assert row["segment"] == "A"
+        assert row["kind"] == "crash_drop"
     assert tape[0]["speed"] == 0.0
     assert tape[1]["speed"] == 40.0

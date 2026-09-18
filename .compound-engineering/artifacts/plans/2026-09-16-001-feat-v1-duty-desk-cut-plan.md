@@ -313,8 +313,11 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - `apps/api/app/cases/service.py`
   - `apps/api/tests/test_ingest.py`
   - `apps/api/tests/test_event_kinds.py`
+  - `apps/api/tests/test_console_reads.py`
+  - `apps/web/openapi.json`
+  - `apps/web/src/api/generated/**`
 - **Approach:**
-  1. Accept `kind` on `EventIn` with the three values. Default `crash_drop` if omitted so old sim clients still work.
+  1. Accept `kind` on `EventIn` with the three values. If omitted, default `crash_drop`. That default is a bridge until V1-U7: `apps/sim/run.py` still posts speed only, and a required field would 422 the current demo. It is not a reason to skip test updates, and it is not the product contract. `GET /events` includes `kind`; update the exact-key assertion in `test_console_reads.py`. Run `make openapi` in this unit (`EventIn` and `EventTapeItem` only). Do not change case card schemas here; that dump stays in V1-U6.
   2. Keep collapse for `crash_drop`. Add speeding and jam using KTD8 constants.
   3. If an `open` case exists for the segment, persist the event and return without a new case.
   4. Do not call the model. Job enqueue is V1-U3.
@@ -453,7 +456,7 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - `docs/adr/0008-v1-first-cut.md`
   - `docs/adr/README.md`
 - **Approach:**
-  1. Tape covers crash_drop (existing), plus short speeding and jam sequences. HTTP only.
+  1. Tape covers crash_drop (existing), plus short speeding and jam sequences. HTTP only. Every sim `POST` sends `kind`. Do not rely on the V1-U2 omit-default (`crash_drop` when the field is absent). Collapse posts `crash_drop`; speeding and jam post their own kind. After that, the documented demo path no longer needs the default.
   2. Compose `worker` service. `make worker`. README: migrate, up, worker, sim, open console.
   3. ADR 0008: two roles, Postgres jobs, playbook files, no GraphInterrupt, no Redis. Point at this plan for units.
 - **Test scenarios:**

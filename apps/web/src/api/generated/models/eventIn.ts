@@ -4,6 +4,7 @@
  * Smart City OS API
  * OpenAPI spec version: 0.1.0
  */
+import type { EventInKind } from './eventInKind';
 
 export interface EventIn {
   /**
@@ -14,4 +15,5 @@ export interface EventIn {
   segment: string;
   speed: number;
   recorded_at: string;
+  kind?: EventInKind;
 }

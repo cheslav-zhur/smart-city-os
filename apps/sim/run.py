@@ -44,6 +44,7 @@ def run(api_url: str) -> None:
         if wait > 0:
             time.sleep(wait)
         last_offset = offset_seconds
+        # V1-U7 must send kind on every POST. Until then the API defaults omitted kind to crash_drop.
         payload = {
             "event_id": f"sim-{run_id}-{index:03d}",
             "segment": "A",

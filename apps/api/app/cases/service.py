@@ -12,38 +12,98 @@ from app.drone.service import DRONE_IDLE, dispatch_after_approve
 from app.models import Case, Event
 
 SEGMENT_A = "A"
+KIND_CRASH_DROP = "crash_drop"
+KIND_SPEEDING = "speeding"
+KIND_JAM = "jam"
+EVENT_KINDS = (KIND_CRASH_DROP, KIND_SPEEDING, KIND_JAM)
 MOVING_MIN = 0.0
 COLLAPSE_MAX = 0.5
+SPEEDING_MIN = 80.0
+JAM_MAX = 5.0
+JAM_SLOW_WINDOW = 3
+JAM_PRIOR_WINDOW = 3
 CASE_OPEN = "open"
 CASE_APPROVED = "approved"
 CASE_REJECTED = "rejected"
 
 
-def maybe_open_on_collapse(session: Session, segment: str) -> Case | None:
-    """Open at most one open case when the last two samples collapse."""
+def maybe_open_case(session: Session, segment: str, kind: str) -> Case | None:
+    """Open at most one open case when this event's kind matches its rule.
+
+    The window is the shared speed tape on the segment, newest first. Kind
+    selects the rule; it does not filter out samples of another kind.
+    """
     existing = session.scalar(
         select(Case).where(Case.segment == segment, Case.status == CASE_OPEN)
     )
     if existing is not None:
         return None
 
-    samples = session.scalars(
-        select(Event)
-        .where(Event.segment == segment)
-        .order_by(Event.recorded_at.desc(), Event.id.desc())
-        .limit(2)
-    ).all()
-    if len(samples) < 2:
+    samples = _recent_samples(session, segment, limit=JAM_SLOW_WINDOW + JAM_PRIOR_WINDOW)
+    if not _rule_matches(kind, samples):
         return None
 
-    current, previous = samples[0], samples[1]
-    if previous.speed <= MOVING_MIN or current.speed > COLLAPSE_MAX:
-        return None
-
-    case = Case(segment=segment, status=CASE_OPEN, drone_status=DRONE_IDLE)
+    case = Case(
+        segment=segment,
+        status=CASE_OPEN,
+        drone_status=DRONE_IDLE,
+        trigger_kind=kind,
+    )
     session.add(case)
     session.flush()
     return case
+
+
+def _recent_samples(session: Session, segment: str, limit: int) -> list[Event]:
+    return list(
+        session.scalars(
+            select(Event)
+            .where(Event.segment == segment)
+            .order_by(Event.recorded_at.desc(), Event.id.desc())
+            .limit(limit)
+        ).all()
+    )
+
+
+def _rule_matches(kind: str, samples: list[Event]) -> bool:
+    if kind == KIND_CRASH_DROP:
+        return _is_collapse(samples)
+    if kind == KIND_SPEEDING:
+        return _is_speeding(samples)
+    if kind == KIND_JAM:
+        return _is_jam(samples)
+    return False
+
+
+def _is_collapse(samples: list[Event]) -> bool:
+    """Last two samples: previous was moving, current has dropped."""
+    if len(samples) < 2:
+        return False
+    current, previous = samples[0], samples[1]
+    return previous.speed > MOVING_MIN and current.speed <= COLLAPSE_MAX
+
+
+def _is_speeding(samples: list[Event]) -> bool:
+    """Last sample is at or over the speeding threshold. No history required."""
+    if not samples:
+        return False
+    return samples[0].speed >= SPEEDING_MIN
+
+
+def _is_jam(samples: list[Event]) -> bool:
+    """Slow stretch that just started, not a road that was already slow.
+
+    Newest-first: the last three speeds are all at or under JAM_MAX, and at
+    least one of the three before that was faster. A shorter tape does not open.
+    """
+    need = JAM_SLOW_WINDOW + JAM_PRIOR_WINDOW
+    if len(samples) < need:
+        return False
+    slow = samples[:JAM_SLOW_WINDOW]
+    prior = samples[JAM_SLOW_WINDOW:need]
+    if any(sample.speed > JAM_MAX for sample in slow):
+        return False
+    return any(sample.speed > JAM_MAX for sample in prior)
 
 
 def list_cases(session: Session) -> list[Case]:

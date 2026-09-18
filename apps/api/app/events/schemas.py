@@ -1,8 +1,11 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.cases.service import SEGMENT_A
+from app.cases.service import KIND_CRASH_DROP, SEGMENT_A
+
+EventKind = Literal["crash_drop", "speeding", "jam"]
 
 
 class EventIn(BaseModel):
@@ -10,6 +13,7 @@ class EventIn(BaseModel):
     segment: str
     speed: float
     recorded_at: datetime
+    kind: EventKind = KIND_CRASH_DROP
 
     @field_validator("segment")
     @classmethod
@@ -29,9 +33,10 @@ class EventOut(BaseModel):
 
 
 class EventTapeItem(BaseModel):
-    """Console tape row: speeds only, not the ingest echo."""
+    """Console tape row: speed and kind, not the ingest echo."""
 
     event_id: str
     segment: str
+    kind: EventKind
     speed: float
     recorded_at: datetime

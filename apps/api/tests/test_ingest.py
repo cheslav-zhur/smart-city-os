@@ -34,6 +34,9 @@ def test_collapse_sequence_opens_one_case(client, db_session) -> None:
     assert stopped.status_code == 201
     assert stopped.json()["case_id"] is not None
     assert db_session.scalar(select(func.count()).select_from(Case)) == 1
+    case = db_session.scalar(select(Case))
+    assert case is not None
+    assert case.trigger_kind == "crash_drop"
 
     again_moving = client.post("/events", json=_event("sim-012", 35.0, seconds=10))
     again_stopped = client.post("/events", json=_event("sim-013", 0.2, seconds=15))

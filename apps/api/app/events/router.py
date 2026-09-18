@@ -19,6 +19,7 @@ def get_events(
         EventTapeItem(
             event_id=event.event_id,
             segment=event.segment,
+            kind=event.kind,
             speed=event.speed,
             recorded_at=event.recorded_at,
         )

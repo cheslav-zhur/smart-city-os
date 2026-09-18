@@ -4,13 +4,15 @@
  * Smart City OS API
  * OpenAPI spec version: 0.1.0
  */
+import type { EventTapeItemKind } from './eventTapeItemKind';
 
 /**
- * Console tape row: speeds only, not the ingest echo.
+ * Console tape row: speed and kind, not the ingest echo.
  */
 export interface EventTapeItem {
   event_id: string;
   segment: string;
+  kind: EventTapeItemKind;
   speed: number;
   recorded_at: string;
 }
