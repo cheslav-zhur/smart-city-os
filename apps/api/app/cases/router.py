@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -5,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.cases.schemas import CaseDecisionOut, CaseListItem
 from app.cases.service import (
-    CASE_OPEN,
+    CaseAlreadyDecidedError,
+    CaseNotFoundError,
     approve_case,
     list_cases,
     reject_case,
@@ -14,15 +16,6 @@ from app.db import get_session
 from app.models import Case
 
 router = APIRouter(tags=["cases"])
-
-
-def _get_open_case(session: Session, case_id: int) -> Case:
-    case = session.get(Case, case_id)
-    if case is None:
-        raise HTTPException(status_code=404, detail="case not found")
-    if case.status != CASE_OPEN:
-        raise HTTPException(status_code=409, detail="case already decided")
-    return case
 
 
 @router.get("/cases")
@@ -45,7 +38,7 @@ def get_cases(
 def post_approve(
     case_id: int, session: Annotated[Session, Depends(get_session)]
 ) -> CaseDecisionOut:
-    case = approve_case(session, _get_open_case(session, case_id))
+    case = _decide(approve_case, session, case_id)
     return CaseDecisionOut(
         id=case.id,
         status=case.status,
@@ -57,9 +50,20 @@ def post_approve(
 def post_reject(
     case_id: int, session: Annotated[Session, Depends(get_session)]
 ) -> CaseDecisionOut:
-    case = reject_case(session, _get_open_case(session, case_id))
+    case = _decide(reject_case, session, case_id)
     return CaseDecisionOut(
         id=case.id,
         status=case.status,
         drone_status=case.drone_status,
     )
+
+
+def _decide(
+    fn: Callable[[Session, int], Case], session: Session, case_id: int
+) -> Case:
+    try:
+        return fn(session, case_id)
+    except CaseNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="case not found") from exc
+    except CaseAlreadyDecidedError as exc:
+        raise HTTPException(status_code=409, detail="case already decided") from exc

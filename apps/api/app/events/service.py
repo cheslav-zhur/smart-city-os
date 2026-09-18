@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.cases.service import SEGMENT_A, maybe_open_case
 from app.events.schemas import EventIn
-from app.llm.service import maybe_fill_rationale
+from app.jobs.service import enqueue_pending_job
 from app.models import Event
 
 
@@ -30,10 +30,18 @@ def ingest_event(session: Session, payload: EventIn) -> tuple[Event, int | None,
             raise
         return existing, None, True
 
-    case = maybe_open_case(session, event.segment, event.kind)
-    if case is not None:
-        maybe_fill_rationale(session, case)
-    return event, case.id if case is not None else None, False
+    # Savepoint: a unique miss on one-open-case must not roll back the event.
+    # KTD12: ingest does not read LLM_API_KEY or fill the card.
+    case_id = None
+    try:
+        with session.begin_nested():
+            case = maybe_open_case(session, event.segment, event.kind)
+            if case is not None:
+                enqueue_pending_job(session, case)
+                case_id = case.id
+    except IntegrityError:
+        case_id = None
+    return event, case_id, False
 
 
 def list_segment_a_events(session: Session) -> list[Event]:

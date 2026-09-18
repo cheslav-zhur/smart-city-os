@@ -1,4 +1,4 @@
-"""U6: optional rationale stub — unset key must not break the duty loop."""
+"""Ingest must not fill the card — even when LLM_API_KEY is set (KTD12)."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -39,6 +39,8 @@ def test_unset_key_leaves_rationale_null_and_case_approvable(
     case = db_session.get(Case, case_id)
     assert case is not None
     assert case.rationale is None
+    assert case.dispatcher_opinion is None
+    assert case.critic_opinion is None
 
     listed = client.get("/cases").json()
     assert listed[0]["rationale"] is None
@@ -48,7 +50,10 @@ def test_unset_key_leaves_rationale_null_and_case_approvable(
     assert approve.json()["status"] == "approved"
 
 
-def test_set_key_fills_stub_rationale(client, db_session, monkeypatch) -> None:
+def test_set_key_on_api_still_leaves_rationale_null(
+    client, db_session, monkeypatch
+) -> None:
+    """API process may have a key in env; ingest must still leave the card empty."""
     monkeypatch.setenv("LLM_API_KEY", "test-stub-key")
 
     client.post("/events", json=_event("llm-key-move", 42.0))
@@ -59,10 +64,9 @@ def test_set_key_fills_stub_rationale(client, db_session, monkeypatch) -> None:
     db_session.expire_all()
     case = db_session.get(Case, case_id)
     assert case is not None
-    assert case.rationale is not None
-    assert "42" in case.rationale
-    assert "0" in case.rationale
-    assert "drone" in case.rationale.lower()
+    assert case.rationale is None
+    assert case.dispatcher_opinion is None
+    assert case.critic_opinion is None
 
     listed = client.get("/cases").json()
-    assert listed[0]["rationale"] == case.rationale
+    assert listed[0]["rationale"] is None

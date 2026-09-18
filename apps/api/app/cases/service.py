@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.audit.service import (
@@ -25,6 +25,14 @@ JAM_PRIOR_WINDOW = 3
 CASE_OPEN = "open"
 CASE_APPROVED = "approved"
 CASE_REJECTED = "rejected"
+
+
+class CaseNotFoundError(LookupError):
+    """No case row for this id."""
+
+
+class CaseAlreadyDecidedError(ValueError):
+    """SQL CAS found zero open rows — already approved or rejected."""
 
 
 def maybe_open_case(session: Session, segment: str, kind: str) -> Case | None:
@@ -111,17 +119,61 @@ def list_cases(session: Session) -> list[Case]:
     return list(session.scalars(select(Case).order_by(Case.id.desc())).all())
 
 
-def approve_case(session: Session, case: Case) -> Case:
-    """Approve an open case: drone stub + audit. Caller must ensure case is open."""
-    case.status = CASE_APPROVED
+def approve_case(session: Session, case_id: int) -> Case:
+    """Approve an open case: drone stub + audit + cancel pending jobs."""
+    case = _cas_decide(
+        session,
+        case_id,
+        status=CASE_APPROVED,
+    )
     dispatch_after_approve(case)
     write_audit(session, case.id, ACTION_APPROVE, WHY_APPROVE)
+    _cancel_pending_jobs(session, case.id)
     return case
 
 
-def reject_case(session: Session, case: Case) -> Case:
-    """Reject an open case: drone stays idle + audit. Caller must ensure case is open."""
-    case.status = CASE_REJECTED
-    case.drone_status = DRONE_IDLE
+def reject_case(session: Session, case_id: int) -> Case:
+    """Reject an open case: drone stays idle + audit + cancel pending jobs."""
+    case = _cas_decide(
+        session,
+        case_id,
+        status=CASE_REJECTED,
+        drone_status=DRONE_IDLE,
+    )
     write_audit(session, case.id, ACTION_REJECT, WHY_REJECT)
+    _cancel_pending_jobs(session, case.id)
     return case
+
+
+def _cas_decide(
+    session: Session,
+    case_id: int,
+    *,
+    status: str,
+    drone_status: str | None = None,
+) -> Case:
+    """UPDATE … WHERE status='open'. Zero rows is already decided, not a Python check."""
+    case = session.get(Case, case_id)
+    if case is None:
+        raise CaseNotFoundError(case_id)
+
+    values: dict[str, str] = {"status": status}
+    if drone_status is not None:
+        values["drone_status"] = drone_status
+    result = session.execute(
+        update(Case)
+        .where(Case.id == case_id, Case.status == CASE_OPEN)
+        .values(**values)
+        .execution_options(synchronize_session=False)
+    )
+    if result.rowcount == 0:
+        raise CaseAlreadyDecidedError(case_id)
+    session.refresh(case)
+    return case
+
+
+def _cancel_pending_jobs(session: Session, case_id: int) -> None:
+    # Imported here so the worker can load jobs.service without the drone stub.
+    from app.jobs.service import cancel_pending_jobs
+
+    cancel_pending_jobs(session, case_id)
