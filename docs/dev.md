@@ -4,7 +4,7 @@ How to run the desk locally. Why Compose plus a container: [ADR 0004](adr/0004-d
 
 Reopen the folder in a container (Cursor: **Dev Containers: Reopen in Container**). Compose starts Postgres 16 and a workspace with Python 3.12 and Node 24. `gh` comes from the Dev Containers `github-cli` feature and uses host `GH_TOKEN`.
 
-`DATABASE_URL` is `postgresql://city:city@postgres:5432/city`. Copy `.env.example` to `.env` at the **repo root** when you add a model key (`LLM_API_KEY`, optional `LLM_BASE_URL` / `LLM_MODEL`). API and worker Settings load that file (process env still overrides). The **worker** fills opinions from the key; the API does not. The desk must still run with no key (empty opinions, approve/reject still work).
+`DATABASE_URL` is `postgresql://city:city@postgres:5432/city`. Copy `.env.example` to `.env` at the **repo root** when you add a model key (`LLM_API_KEY`, optional `LLM_BASE_URL` / `LLM_MODEL`). Optional `LOG_LEVEL` (default `INFO`) for worker ops logs via structlog — not the product audit trail. API and worker Settings load that file (process env still overrides). The **worker** fills opinions from the key; the API does not. The desk must still run with no key (empty opinions, approve/reject still work).
 
 Web packages: **pnpm**. Named volumes keep pip / pnpm / uv caches across container rebuilds. Image layers cache apt, Node, and pnpm until the Dockerfile changes.
 
@@ -34,7 +34,7 @@ apps/api/.venv/bin/pre-commit install
 
 Open the console at the forwarded port **5173**. Run `make api` and `make web` in two terminals inside `dev`. Do not also start the Compose `api`/`web` services on the same ports.
 
-API tests also run on `git push` via [pre-commit](https://pre-commit.com/) (`pre-push` hook, Postgres required).
+API and sim tests also run on `git push` via [pre-commit](https://pre-commit.com/) (`pre-push` hook, Postgres required), and on GitHub Actions (`.github/workflows/ci.yml`) for `main` and pull requests. No live LLM in CI.
 
 ## Demo path (Compose profile)
 

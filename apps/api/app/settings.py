@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     llm_api_key: str | None = None
     llm_base_url: str | None = None
     llm_model: str | None = None
+    # Worker / API ops logs (stdlib + structlog). Not the product audit trail.
+    log_level: str = "INFO"
 
     @property
     def sqlalchemy_url(self) -> str:

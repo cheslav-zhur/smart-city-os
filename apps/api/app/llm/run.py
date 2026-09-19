@@ -6,6 +6,7 @@ import contextvars
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
+import structlog
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 from sqlalchemy.orm import Session
@@ -16,6 +17,8 @@ from app.models import Case
 
 # Under the job lease (30s). Named tunable, same class as JOB_LEASE_SECONDS.
 GRAPH_TIMEOUT_SECONDS = 25.0
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -33,6 +36,7 @@ def run_opinion_graph(
     timeout_seconds: float = GRAPH_TIMEOUT_SECONDS,
 ) -> GraphResult:
     """Run dispatcher then critic. On timeout, return empty opinions (KTD5)."""
+    log = logger.bind(case_id=case.id, segment=case.segment)
     ctx = RunContext(session=session, case_id=case.id, segment=case.segment)
     token = set_run_context(ctx)
     graph = get_compiled_graph(model)
@@ -50,13 +54,23 @@ def run_opinion_graph(
     try:
         _invoke_with_timeout(graph, initial, timeout_seconds=timeout_seconds)
     except TimeoutError:
+        log.warning("opinion_graph_timeout", timeout_seconds=timeout_seconds)
         return GraphResult(None, None, ())
     finally:
         reset_run_context(token)
 
     # Both-or-neither for a confident proposal (KTD5 / KTD9).
     if ctx.dispatcher_opinion is None or ctx.critic_opinion is None:
+        log.info(
+            "opinion_graph_incomplete",
+            has_dispatcher=ctx.dispatcher_opinion is not None,
+            has_critic=ctx.critic_opinion is not None,
+        )
         return GraphResult(None, None, ())
+    log.info(
+        "opinion_graph_complete",
+        audit_events=len(ctx.audit_events),
+    )
     return GraphResult(
         ctx.dispatcher_opinion,
         ctx.critic_opinion,
