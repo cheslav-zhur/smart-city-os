@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from langchain_openai import ChatOpenAI
 
+from app.llm.openai_tool_call_extras import install_tool_call_extras_shim
 from app.settings import Settings
 
 # Starter demo model for Google AI Studio OpenAI-compatible endpoint.
@@ -15,6 +16,9 @@ def make_chat_model(settings: Settings) -> ChatOpenAI:
     """Build the runtime chat model. Caller must ensure llm_api_key is set."""
     if not settings.llm_api_key:
         raise ValueError("llm_api_key is required to build the chat model")
+    # Gemini 3 requires thought_signature echo on tool turns; langchain-openai
+    # 1.6.2 drops it — install until the pin includes upstream PR #37356.
+    install_tool_call_extras_shim()
     return ChatOpenAI(
         api_key=settings.llm_api_key,
         base_url=settings.llm_base_url or DEFAULT_LLM_BASE_URL,
