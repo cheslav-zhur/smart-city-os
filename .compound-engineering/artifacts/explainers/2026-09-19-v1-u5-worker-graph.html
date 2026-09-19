@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>V1-U5: worker graph, opinions, fenced persist</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #5a5a5a;
+    --line: #d8d8d0;
+    --bg: #faf9f6;
+    --card: #ffffff;
+    --accent: #0b6e4f;
+    --warn: #8a4b08;
+    --code-bg: #f0efe8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  h1 { font-size: 1.65rem; line-height: 1.25; margin: 0 0 0.75rem; }
+  h2 { font-size: 1.15rem; margin: 2rem 0 0.6rem; }
+  h3 { font-size: 1rem; margin: 1.25rem 0 0.4rem; }
+  p, li { max-width: 70ch; }
+  .meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1rem;
+    margin: 0 0 1.5rem;
+    padding: 0.85rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .meta dt { color: var(--muted); }
+  .meta dd { margin: 0; }
+  .diagram {
+    width: 100%;
+    max-width: 42rem;
+    margin: 1rem 0 1.25rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.75rem;
+    overflow-x: auto;
+  }
+  .diagram svg { display: block; width: 100%; height: auto; }
+  .note {
+    border-left: 3px solid var(--accent);
+    padding: 0.35rem 0 0.35rem 0.85rem;
+    margin: 0.75rem 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .warn {
+    border-left-color: var(--warn);
+  }
+  pre, code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.85rem 1rem;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  .ann {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .ann-block {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.75rem 0.9rem;
+  }
+  .ann-block .why {
+    color: var(--accent);
+    font-size: 0.88rem;
+    margin-top: 0.4rem;
+  }
+  ul { padding-left: 1.2rem; }
+  footer {
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .k { color: #0550ae; }
+  .s { color: #0a3069; }
+  .c { color: #6e7781; }
+</style>
+</head>
+<body>
+<main>
+  <h1>V1-U5: worker graph, opinions, fenced persist</h1>
+  <dl class="meta">
+    <dt>Date</dt><dd>2026-09-19</dd>
+    <dt>Input shape</dt><dd>diff</dd>
+    <dt>Subject</dt><dd>Uncommitted V1-U5 working tree (StateGraph dispatcher/critic + worker path); U4 playbook already landed</dd>
+  </dl>
+
+  <p>
+    До этого юнита worker умел только <strong>claim</strong> job и записать
+    пустые opinions. Теперь при наличии ключа он гоняет двухролевой граф,
+    копит audit в памяти и пишет всё одной fenced-транзакцией — или ничего,
+    если человек уже успел решить кейс.
+  </p>
+
+  <h2>1. Картина целиком</h2>
+  <p>
+    HTTP-ingest по-прежнему не ждёт модель. API только кладёт event / case / job.
+    Мозг живёт в отдельном процессе <code>python -m app.worker</code>.
+  </p>
+
+  <div class="diagram" aria-label="System loop">
+    <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" role="img">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#1a1a1a"/>
+        </marker>
+      </defs>
+      <rect x="20" y="30" width="100" height="44" rx="6" fill="#fff" stroke="#1a1a1a"/>
+      <text x="70" y="57" text-anchor="middle" font-size="13">Sim / POST</text>
+      <line x1="120" y1="52" x2="168" y2="52" stroke="#1a1a1a" marker-end="url(#arrow)"/>
+      <rect x="170" y="30" width="90" height="44" rx="6" fill="#fff" stroke="#1a1a1a"/>
+      <text x="215" y="57" text-anchor="middle" font-size="13">API</text>
+      <line x1="260" y1="52" x2="308" y2="52" stroke="#1a1a1a" marker-end="url(#arrow)"/>
+      <rect x="310" y="20" width="110" height="64" rx="6" fill="#e8f5ef" stroke="#0b6e4f"/>
+      <text x="365" y="48" text-anchor="middle" font-size="13">Postgres</text>
+      <text x="365" y="66" text-anchor="middle" font-size="11" fill="#5a5a5a">events·cases·jobs</text>
+      <line x1="365" y1="84" x2="365" y2="118" stroke="#1a1a1a" marker-end="url(#arrow)"/>
+      <rect x="300" y="120" width="130" height="50" rx="6" fill="#fff" stroke="#1a1a1a"/>
+      <text x="365" y="150" text-anchor="middle" font-size="13">Worker claim</text>
+      <line x1="430" y1="145" x2="488" y2="145" stroke="#1a1a1a" marker-end="url(#arrow)"/>
+      <rect x="490" y="110" width="140" height="70" rx="6" fill="#fff3e0" stroke="#8a4b08"/>
+      <text x="560" y="140" text-anchor="middle" font-size="13">Graph</text>
+      <text x="560" y="158" text-anchor="middle" font-size="11" fill="#5a5a5a">disp → critic</text>
+      <path d="M560 180 L560 200 L365 200 L365 170" fill="none" stroke="#0b6e4f" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <text x="470" y="195" font-size="11" fill="#0b6e4f">fenced persist</text>
+      <rect x="20" y="140" width="120" height="50" rx="6" fill="#fff" stroke="#1a1a1a"/>
+      <text x="80" y="170" text-anchor="middle" font-size="13">Operator</text>
+      <line x1="140" y1="165" x2="300" y2="145" stroke="#1a1a1a" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+      <text x="200" y="130" font-size="11" fill="#5a5a5a">approve/reject</text>
+    </svg>
+  </div>
+
+  <p class="note">
+    Пунктир к Operator: человек может нажать кнопку, пока graph ещё бежит.
+    Тогда persist обязан отказать — это и есть смысл fence.
+  </p>
+
+  <h2>2. Три короткие транзакции</h2>
+  <p>
+    Долгий graph <em>не</em> держит DB-лок. Worker режет работу на три шага —
+    это уже было в U3; U5 только подставил graph между claim и persist.
+  </p>
+
+  <div class="ann">
+    <div class="ann-block">
+      <strong>1. Claim</strong> — короткая txn: <code>pending</code> (или expired
+      <code>running</code>) → <code>running</code>, bump <code>lease_version</code>, commit.
+      <div class="why">Почему отдельно: lease должен быть виден другим worker’ам до LLM-вызова.</div>
+    </div>
+    <div class="ann-block">
+      <strong>2. Graph</strong> — своя session только на чтение (events/case) + файлы playbook.
+      Opinions и audit копятся в памяти (<code>RunContext</code>), не в БД.
+      <div class="why">Почему не писать mid-graph: иначе после approve человека в audit долетели бы «призрачные» tool-строки без согласованных opinions.</div>
+    </div>
+    <div class="ann-block">
+      <strong>3. Fenced persist</strong> — одна txn: оба opinion (или оба null) + audit rows + job terminal,
+      но только если <code>job_id + lease_version + status=running</code> и case ещё <code>open</code>.
+      <div class="why">Fence = «я всё ещё владелец этой аренды». Steal или decide обнуляют право писать.</div>
+    </div>
+  </div>
+
+  <h3>Где это в коде</h3>
+  <pre><span class="c"># apps/api/app/jobs/loop.py — process_claimed_job</span>
+<span class="k">if not</span> settings.llm_api_key:
+    finish_empty_opinions(...)          <span class="c"># путь без модели</span>
+<span class="k">else</span>:
+    result = run_opinion_graph(...)     <span class="c"># память, не БД</span>
+    persist_job_result(                 <span class="c"># fence + оба столбца + audit</span>
+        ...,
+        dispatcher_opinion=result.dispatcher_opinion,
+        critic_opinion=result.critic_opinion,
+        audit_rows=...,
+    )</pre>
+
+  <p class="note warn">
+    Lazy-import graph внутри <code>if key</code>: API-процесс, который импортирует
+    <code>jobs.service</code> для cancel pending, <strong>не</strong> тянет LangGraph (KTD12).
+  </p>
+
+  <h2>3. StateGraph: две роли, разные allowlist</h2>
+  <p>
+    Не <code>create_react_agent</code>. Свой <code>StateGraph</code>: dispatcher крутит tools,
+    потом critic — со <em>своим</em> списком tools. Bound names = allowlist: fly / approve / reject
+    просто не зарегистрированы.
+  </p>
+
+  <div class="diagram" aria-label="Graph flow">
+    <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg" role="img">
+      <defs>
+        <marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#1a1a1a"/>
+        </marker>
+      </defs>
+      <rect x="10" y="55" width="70" height="36" rx="5" fill="#e8f5ef" stroke="#0b6e4f"/>
+      <text x="45" y="77" text-anchor="middle" font-size="12">START</text>
+      <line x1="80" y1="73" x2="118" y2="73" stroke="#1a1a1a" marker-end="url(#a2)"/>
+      <rect x="120" y="50" width="100" height="46" rx="5" fill="#fff" stroke="#1a1a1a"/>
+      <text x="170" y="78" text-anchor="middle" font-size="12">dispatcher</text>
+      <path d="M220 60 C250 20 280 20 300 55" fill="none" stroke="#1a1a1a" marker-end="url(#a2)"/>
+      <text x="260" y="28" font-size="11" fill="#5a5a5a">tool_calls?</text>
+      <rect x="300" y="10" width="110" height="36" rx="5" fill="#fff3e0" stroke="#8a4b08"/>
+      <text x="355" y="32" text-anchor="middle" font-size="11">disp tools</text>
+      <path d="M300 28 C270 28 250 50 220 60" fill="none" stroke="#8a4b08" stroke-dasharray="3 2"/>
+      <line x1="220" y1="85" x2="300" y2="115" stroke="#1a1a1a" marker-end="url(#a2)"/>
+      <rect x="300" y="100" width="100" height="36" rx="5" fill="#fff" stroke="#1a1a1a"/>
+      <text x="350" y="122" text-anchor="middle" font-size="12">critic</text>
+      <path d="M400 110 C440 70 480 70 510 100" fill="none" stroke="#1a1a1a" marker-end="url(#a2)"/>
+      <rect x="510" y="85" width="100" height="36" rx="5" fill="#fff3e0" stroke="#8a4b08"/>
+      <text x="560" y="107" text-anchor="middle" font-size="11">crit tools</text>
+      <path d="M510 118 C470 140 430 140 400 130" fill="none" stroke="#8a4b08" stroke-dasharray="3 2"/>
+      <line x1="400" y1="130" x2="460" y2="150" stroke="#1a1a1a" marker-end="url(#a2)"/>
+      <text x="500" y="155" font-size="12">END</text>
+    </svg>
+  </div>
+
+  <ul>
+    <li><strong>Dispatcher tools:</strong> <code>read_recent_events</code>, <code>read_case</code>, <code>search_playbook</code>, <code>write_opinion</code></li>
+    <li><strong>Critic tools:</strong> без <code>read_recent_events</code> — другой allowlist на node</li>
+    <li><strong>write_opinion</strong> пишет только в <code>RunContext</code>; role должен совпасть с текущей нодой</li>
+  </ul>
+
+  <h3>Both-or-neither</h3>
+  <p>
+    Если graph закончился, но заполнился только один голос — в БД уходят
+    <em>оба</em> null. «Уверенное» предложение модели = оба столбца non-null (KTD9).
+    Timeout / нет ключа / exception → тоже null, кейс всё ещё approvable.
+  </p>
+
+  <h2>4. RunContext и timeout</h2>
+  <p>
+    Tools читают session/case через <code>contextvars</code>. Graph крутится в
+    <code>ThreadPoolExecutor</code> с wall-clock timeout (25s &lt; lease 30s), поэтому
+    контекст <strong>копируется</strong> в поток — иначе tools не видят RunContext.
+  </p>
+  <pre><span class="c"># apps/api/app/llm/run.py</span>
+copied = contextvars.copy_context()
+future = pool.submit(copied.run, _call)
+future.result(timeout=timeout_seconds)  <span class="c"># 25s</span></pre>
+  <p class="note">
+    Cancel потока после timeout не убивает уже идущий HTTP к Gemini — lease
+    всё равно истечёт, другой worker сможет steal. Persist старого lease станет noop.
+  </p>
+
+  <h2>5. LLM-клиент: не «Google SDK», а совместимый endpoint</h2>
+  <p>
+    <code>ChatOpenAI</code> + <code>LLM_BASE_URL</code> на
+    <code>…/v1beta/openai/</code> + ключ AI Studio. Сегодня Gemini
+    (<code>gemini-3.6-flash</code>), завтра другой compatible host — тот же код.
+  </p>
+  <p class="note warn">
+    Модели Google снимают с полки: <code>gemini-2.0-flash</code> уже 404.
+    Имя модели — env, не захардкоженный «навсегда» выбор продукта.
+  </p>
+
+  <h2>6. Audit: кто говорил</h2>
+  <p>
+    Operator audit как раньше (<code>write_audit</code> → actor из settings).
+    Model/tool строки появляются <em>только</em> в fenced persist:
+  </p>
+  <ul>
+    <li><code>dispatcher</code> / <code>critic</code> — <code>action=model_call</code></li>
+    <li><code>tool:search_playbook</code> и т.п. — <code>action=tool_call</code></li>
+  </ul>
+  <p>
+    Консоль <code>GET /cases/{id}/audit</code> ещё в U6 — строки уже пишутся в таблицу.
+  </p>
+
+  <h2>7. Что сознательно не трогали</h2>
+  <ul>
+    <li>Ingest path и code rules — без LLM</li>
+    <li>Approve/reject и drone stub — только application code после человека</li>
+    <li>Redis / Celery / LangGraph checkpointer — нет</li>
+    <li>Compose <code>worker</code> service — это U7; пока <code>python -m app.worker</code> руками</li>
+  </ul>
+
+  <h2>8. Как читать файлы по порядку</h2>
+  <ol>
+    <li><code>app/jobs/loop.py</code> — оркестрация трёх шагов</li>
+    <li><code>app/llm/run.py</code> + <code>run_context.py</code> — память и timeout</li>
+    <li><code>app/llm/tools.py</code> — allowlist</li>
+    <li><code>app/llm/graph.py</code> — топология ролей</li>
+    <li><code>app/jobs/service.py</code> <code>persist_job_result</code> — fence + audit</li>
+    <li><code>tests/test_agents.py</code> — stub LLM, не live Gemini в CI</li>
+  </ol>
+
+  <p>
+    Если держать в голове одну фразу: <em>модель предлагает текстом в памяти;
+    БД меняется одним забором; летать по-прежнему может только человек.</em>
+  </p>
+
+  <footer>Composed 2026-09-19 by ce-explain</footer>
+</main>
+</body>
+</html>
