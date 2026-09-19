@@ -1,8 +1,24 @@
 # Smart City OS
 
-An operations desk for urban traffic: ingest → case → proposal → human decision → audit. The north star is a full city platform; this repo grows toward that in stages.
+An operations desk for urban traffic: **ingest → case → proposal → human decision → audit**.
 
-Traffic samples arrive on one segment (crash-drop, speeding, jam). A code rule may open a **case** and the system can propose a **drone look**. An operator approves or rejects; the decision is recorded. Drone flight here is case state only — no vehicle or fleet integration.
+A serious slice of govtech — and a way to practice complex backend / AI patterns in one loop. Not a chat demo, not a product launch.
+
+Traffic samples arrive on one segment (crash-drop, speeding, jam). A code rule may open a **case**; the system can propose a **drone look**. An operator approves or rejects; the decision is recorded. Drone flight here is case state only — no vehicle or fleet integration.
+
+![Operations desk — case card with drone proposal and recent speeds](console.png)
+
+## Demo
+
+How to run locally (setup + compose demo path): [`docs/dev.md`](docs/dev.md).
+
+## What this demonstrates
+
+- Idempotent event ingest that does not wait on the model
+- Async jobs for dispatcher / critic opinions
+- Case state machine; tool allowlist — agent proposes, only the operator changes drone status
+- Modular monolith (folders that could become services later)
+- Audit as data (operator decisions + model/tool calls), not stdout
 
 ## Loop
 
@@ -19,7 +35,11 @@ flowchart LR
   Op[Operator] -->|approve / reject| Web
 ```
 
-Ingest stays on the API path and never waits on the model. The worker fills dispatcher and critic opinions asynchronously. Only the operator can change drone status; that write and the decision audit stay in application code.
+## Stack
+
+- **API / worker:** Python, FastAPI, PostgreSQL, one LLM gateway, jobs in the same app package
+- **Console:** React (Vite) + TypeScript, TanStack Query, OpenAPI client via orval, Tailwind
+- **Ops:** simulator script, Docker Compose for `up`
 
 ## Horizons
 
@@ -27,32 +47,22 @@ Same loop, three depths. Details in [`docs/scope/`](docs/scope/README.md).
 
 | | Doc | Meaning |
 |---|-----|---------|
-| 01 | [MVP](docs/scope/01-mvp.md) | Smallest thing that runs |
-| 02 | [v1](docs/scope/02-v1.md) | First real shape, still one repo |
+| 01 | [MVP](docs/scope/01-mvp.md) | Smallest thing that runs — **done** |
+| 02 | [v1](docs/scope/02-v1.md) | First real shape, still one repo — **current** |
 | 03 | [North star](docs/scope/03-north-star.md) | Large high-load platform — orientation, not a sprint |
-
-Build in that order. Do not implement the north star as a bundle.
-
-## Stack
-
-Python, FastAPI, PostgreSQL, one LLM gateway, a job worker in the same app package, a thin console, a simulator script. Docker Compose for `up`.
-
-The model may draft opinions; only application code after human confirm updates drone status. Ingest does not wait on the model.
-
-## Development
-
-How to run locally: [`docs/dev.md`](docs/dev.md).
 
 ## Status
 
-MVP (U1–U7) is done — see [`docs/plans/01-mvp.md`](docs/plans/01-mvp.md).
+MVP (U1–U7) done. Current cut: **v1 duty desk** (V1-U1–V1-U7). Progress: [plan](.compound-engineering/artifacts/plans/2026-09-16-001-feat-v1-duty-desk-cut-plan.md). Issues: [cheslav-zhur/smart-city-os](https://github.com/cheslav-zhur/smart-city-os/issues) (pointers; contract stays in `docs/`).
 
-Current cut: **v1 duty desk** (V1-U1–V1-U7). Progress lives in [`.compound-engineering/artifacts/plans/2026-09-16-001-feat-v1-duty-desk-cut-plan.md`](.compound-engineering/artifacts/plans/2026-09-16-001-feat-v1-duty-desk-cut-plan.md) — do not duplicate the table here.
+## Not in this cut
 
-[GitHub Issues](https://github.com/happylolonly/smart-city-os/issues) are an index of large tasks and named units. Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1); which units already have a ticket is in that plan’s Issues table. The contract and status stay in [`docs/`](docs/README.md) and the active plan. An issue is a pointer, not a second spec.
+Kafka · microservices · multi-domain sensors · digital twin / map · drone fleet · citizen app · PostGIS.
+
+If events/day blow up first: split ingest, move jobs off the Postgres table, keep the HITL write-path thin. Not coded as a bundle upfront.
 
 ## Docs
 
-- [docs/README.md](docs/README.md)
-- [docs/scope/](docs/scope/README.md)
-- [docs/dev.md](docs/dev.md)
+- [docs/README.md](docs/README.md) — map of scope / ADR / plans
+- [docs/dev.md](docs/dev.md) — run locally
+- [docs/scope/](docs/scope/README.md) — what we are building
