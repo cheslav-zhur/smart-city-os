@@ -37,6 +37,8 @@ sequenceDiagram
     API->>DB: audit who what when why
 ```
 
+This diagram is the **MVP** shape: optional draft on the ingest path. In v1 the model runs in a worker after a job enqueue — ingest never waits on the LLM. See the [repo README](../../README.md) loop and [02-v1.md](02-v1.md).
+
 Events are not foreign-keyed to cases: a code rule opens a case from recent speeds.
 
 ```mermaid
