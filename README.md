@@ -1,5 +1,12 @@
 # Smart City OS
 
+[![CI](https://github.com/cheslav-zhur/smart-city-os/actions/workflows/ci.yml/badge.svg)](https://github.com/cheslav-zhur/smart-city-os/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+
 An operations desk for urban traffic: **ingest → case → proposal → human decision → audit**.
 
 A serious slice of govtech — and a way to practice complex backend / AI patterns in one loop. Not a chat demo, not a product launch.
@@ -37,9 +44,8 @@ flowchart LR
 
 ## Stack
 
-- **API / worker:** Python, FastAPI, PostgreSQL, one LLM gateway, jobs in the same app package
-- **Console:** React (Vite) + TypeScript, TanStack Query, OpenAPI client via orval, Tailwind
-- **Ops:** simulator script, Docker Compose for `up`
+Python / FastAPI / LangGraph · React (Vite) · PostgreSQL · Compose.  
+Details: [`docs/stack.md`](docs/stack.md). Decisions: [`docs/adr/`](docs/adr/README.md).
 
 ## Horizons
 
@@ -64,5 +70,6 @@ If events/day blow up first: split ingest, move jobs off the Postgres table, kee
 ## Docs
 
 - [docs/README.md](docs/README.md) — map of scope / ADR / plans
+- [docs/stack.md](docs/stack.md) — tech inventory
 - [docs/dev.md](docs/dev.md) — run locally
 - [docs/scope/](docs/scope/README.md) — what we are building
