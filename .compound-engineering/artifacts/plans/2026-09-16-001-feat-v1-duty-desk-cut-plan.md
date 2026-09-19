@@ -271,7 +271,7 @@ GitHub issues are an index. Status stays in this file. Unit ids for this cut are
 | V1-U2 | [#2](https://github.com/happylolonly/smart-city-os/issues/2) | done |
 | V1-U3 | [#4](https://github.com/happylolonly/smart-city-os/issues/4) | done |
 | V1-U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) | done |
-| V1-U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) | |
+| V1-U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) | done |
 | V1-U6 | not opened — say so before writing this unit; do not open unasked | |
 | V1-U7 | not opened — say so before writing this unit; do not open unasked | |
 
@@ -388,6 +388,7 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
 
 ### V1-U5. StateGraph dispatcher and critic
 
+- **Status:** done
 - **Goal:** Worker runs a two-node graph with allowlisted tools, timeouts, and model/tool audit.
 - **Requirements:** R6, R7, R8, R9, R11, R12
 - **Dependencies:** V1-U3, V1-U4

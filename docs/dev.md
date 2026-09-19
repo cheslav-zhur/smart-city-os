@@ -4,7 +4,7 @@ How to run the desk locally. Why Compose plus a container: [ADR 0004](adr/0004-d
 
 Reopen the folder in a container (Cursor: **Dev Containers: Reopen in Container**). Compose starts Postgres 16 and a workspace with Python 3.12 and Node 24. `gh` comes from the Dev Containers `github-cli` feature and uses host `GH_TOKEN`.
 
-`DATABASE_URL` is `postgresql://city:city@postgres:5432/city`. Copy `.env.example` to `.env` when you add a model key (`LLM_API_KEY`, optional `LLM_BASE_URL` / `LLM_MODEL`). The **worker** reads those lines; the API does not fill opinions from them. The desk must still run with no key (empty opinions, approve/reject still work).
+`DATABASE_URL` is `postgresql://city:city@postgres:5432/city`. Copy `.env.example` to `.env` at the **repo root** when you add a model key (`LLM_API_KEY`, optional `LLM_BASE_URL` / `LLM_MODEL`). API and worker Settings load that file (process env still overrides). The **worker** fills opinions from the key; the API does not. The desk must still run with no key (empty opinions, approve/reject still work).
 
 Web packages: **pnpm**. Named volumes keep pip / pnpm / uv caches across container rebuilds. Image layers cache apt, Node, and pnpm until the Dockerfile changes.
 

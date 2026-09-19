@@ -9,6 +9,12 @@ from app.llm.playbook import (
 )
 
 
+def test_default_playbooks_root_is_packaged() -> None:
+    """Wheels and editable installs must expose the playbooks package dir."""
+    assert DEFAULT_PLAYBOOKS_ROOT.is_dir()
+    assert any(DEFAULT_PLAYBOOKS_ROOT.glob("*.md"))
+
+
 def test_query_matching_heading_returns_file_chunk() -> None:
     hits = search_playbook("Crash look", root=DEFAULT_PLAYBOOKS_ROOT)
 

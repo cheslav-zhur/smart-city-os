@@ -1,7 +1,8 @@
 """Enqueue, claim, and fenced persist for one job row per case.
 
 This module must not import app.drone.service or approve/reject. The worker
-process loads it; flight stays in the API.
+process loads it; flight stays in the API. Do not import the LangGraph runtime
+here — keep claim/persist usable from API decide paths without pulling the model.
 """
 
 from dataclasses import dataclass
@@ -10,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import Session
 
+from app.audit.service import write_audit_entry
 from app.models import (
     JOB_CANCELLED,
     JOB_DONE,
@@ -88,6 +90,13 @@ def claim_job(session: Session) -> ClaimedJob | None:
     )
 
 
+@dataclass(frozen=True)
+class AuditPersistRow:
+    actor: str
+    action: str
+    why: str
+
+
 def persist_job_result(
     session: Session,
     *,
@@ -95,12 +104,13 @@ def persist_job_result(
     lease_version: int,
     dispatcher_opinion: str | None,
     critic_opinion: str | None,
+    audit_rows: tuple[AuditPersistRow, ...] = (),
 ) -> str:
-    """Write both opinion columns or neither, then a terminal job status.
+    """Write both opinion columns or neither, optional model/tool audit, job status.
 
     Fencing is lease_version plus status='running'. If the case is no longer
     open, the job becomes cancelled and the case is not mutated. A stale
-    lease is a no-op.
+    lease is a no-op. Model/tool audit rows land only in this transaction (KTD6).
     """
     job = session.scalar(
         select(Job)
@@ -127,14 +137,22 @@ def persist_job_result(
 
     case.dispatcher_opinion = dispatcher_opinion
     case.critic_opinion = critic_opinion
+    for row in audit_rows:
+        write_audit_entry(
+            session,
+            case_id=case.id,
+            actor=row.actor,
+            action=row.action,
+            why=row.why,
+        )
     job.status = JOB_DONE
     job.lease_expires_at = None
     session.flush()
     return PERSIST_DONE
 
 
-def finish_stub_job(session: Session, claimed: ClaimedJob) -> str:
-    """Complete a claimed job with empty opinions. The graph is V1-U5."""
+def finish_empty_opinions(session: Session, claimed: ClaimedJob) -> str:
+    """Complete a claimed job with empty opinions (no key, timeout, or skip)."""
     return persist_job_result(
         session,
         job_id=claimed.job_id,
@@ -142,3 +160,7 @@ def finish_stub_job(session: Session, claimed: ClaimedJob) -> str:
         dispatcher_opinion=None,
         critic_opinion=None,
     )
+
+
+# Back-compat name used by V1-U3 tests.
+finish_stub_job = finish_empty_opinions
