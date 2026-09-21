@@ -319,8 +319,8 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
 
 | Unit | Issue | Status |
 |------|-------|--------|
-| U1 | not opened — say so before writing this unit; do not open unasked | |
-| U2 | not opened — say so before writing this unit; do not open unasked | |
+| U1 | [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9) | done |
+| U2 | [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9) | done |
 | U3 | not opened — say so before writing this unit; do not open unasked | |
 | U4 | not opened — say so before writing this unit; do not open unasked | |
 | U5 | not opened — say so before writing this unit; do not open unasked | |

@@ -64,6 +64,7 @@ export function CaseList({
               </div>
               <div className="mt-1.5 flex gap-3 text-xs text-slate-500 dark:text-slate-400">
                 <span>segment {row.segment}</span>
+                <span>{row.trigger_kind ?? '—'}</span>
                 <span>{formatDroneStatus(row.drone_status)}</span>
               </div>
             </button>

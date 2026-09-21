@@ -4,6 +4,7 @@ export type { DecideKind } from './decide'
 export {
   CASE_APPROVED,
   CASE_OPEN,
+  CASE_OUTDATED,
   CASE_REJECTED,
   DRONE_IDLE,
   DRONE_IN_FLIGHT,

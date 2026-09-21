@@ -44,7 +44,10 @@ def test_collapse_ingest_appears_on_console_lists(client) -> None:
         "drone_status",
         "dispatcher_opinion",
         "critic_opinion",
+        "trigger_kind",
     }
+    assert "kind" not in item
+    assert "speed" not in item
     assert item == {
         "id": case_id,
         "segment": "A",
@@ -52,6 +55,7 @@ def test_collapse_ingest_appears_on_console_lists(client) -> None:
         "drone_status": "idle",
         "dispatcher_opinion": None,
         "critic_opinion": None,
+        "trigger_kind": "crash_drop",
     }
 
     events = client.get("/events")

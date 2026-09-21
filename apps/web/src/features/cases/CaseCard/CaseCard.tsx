@@ -69,6 +69,7 @@ export function CaseCard({
           <div className="mb-6 flex flex-wrap items-center gap-2">
             <span className="text-sm text-slate-500 dark:text-slate-400">
               Case {caseRow.id} · segment {caseRow.segment}
+              {caseRow.trigger_kind ? ` · ${caseRow.trigger_kind}` : ''}
             </span>
             <StatusChip status={caseRow.status} />
             <span className="rounded-full bg-slate-900/5 px-2.5 py-0.5 text-xs text-slate-600 dark:bg-white/5 dark:text-slate-300">

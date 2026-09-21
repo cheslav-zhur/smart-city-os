@@ -9,6 +9,7 @@ import type { CaseListItem } from '../../../api/generated/models/caseListItem'
 import {
   CASE_APPROVED,
   CASE_OPEN,
+  CASE_OUTDATED,
   DRONE_IDLE,
   DRONE_ON_SITE,
   EMPTY_OPINIONS_COPY,
@@ -22,6 +23,7 @@ const openCase: CaseListItem = {
   drone_status: DRONE_IDLE,
   dispatcher_opinion: null,
   critic_opinion: null,
+  trigger_kind: 'crash_drop',
 }
 
 const fetchMock = vi.fn()
@@ -213,4 +215,66 @@ test('audit error does not show empty ledger copy', () => {
 
   expect(screen.getByText('Could not load audit')).toBeInTheDocument()
   expect(screen.queryByText('No audit rows yet')).not.toBeInTheDocument()
+})
+
+test('card shows trigger kind string for an open case', () => {
+  render(
+    <CaseCard
+      caseRow={openCase}
+      speeds={[]}
+      audit={[]}
+      busy={false}
+      busyKind={null}
+      onApprove={() => undefined}
+      onReject={() => undefined}
+    />,
+  )
+
+  expect(
+    screen.getByText('Case 7 · segment A · crash_drop'),
+  ).toBeInTheDocument()
+})
+
+test('outdated case disables Send and Dismiss', () => {
+  render(
+    <CaseCard
+      caseRow={{ ...openCase, status: CASE_OUTDATED }}
+      speeds={[]}
+      audit={[]}
+      busy={false}
+      busyKind={null}
+      onApprove={() => undefined}
+      onReject={() => undefined}
+    />,
+  )
+
+  expect(screen.getByRole('button', { name: 'Send drone' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Dismiss' })).toBeDisabled()
+})
+
+test('Last speeds table has no kind column', () => {
+  render(
+    <CaseCard
+      caseRow={openCase}
+      speeds={[
+        {
+          event_id: 'sim-010',
+          segment: 'A',
+          kind: 'crash_drop',
+          speed: 40,
+          recorded_at: new Date().toISOString(),
+        },
+      ]}
+      audit={[]}
+      busy={false}
+      busyKind={null}
+      onApprove={() => undefined}
+      onReject={() => undefined}
+    />,
+  )
+
+  const headers = screen
+    .getAllByRole('columnheader')
+    .map((header) => header.textContent)
+  expect(headers).toEqual(['event', 'segment', 'speed', 'recorded'])
 })

@@ -15,4 +15,5 @@ export interface CaseListItem {
   drone_status: string;
   dispatcher_opinion: string | null;
   critic_opinion: string | null;
+  trigger_kind: string | null;
 }

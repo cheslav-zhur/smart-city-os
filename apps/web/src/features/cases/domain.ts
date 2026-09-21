@@ -1,5 +1,5 @@
 /** Case lifecycle on the console card/list. Matches API CASE_* constants. */
-export type CaseStatus = 'open' | 'approved' | 'rejected'
+export type CaseStatus = 'open' | 'approved' | 'rejected' | 'outdated'
 
 /** Drone stub status. Matches API DRONE_* constants. */
 export type DroneStatus = 'idle' | 'in_flight' | 'on_site'
@@ -7,6 +7,7 @@ export type DroneStatus = 'idle' | 'in_flight' | 'on_site'
 export const CASE_OPEN: CaseStatus = 'open'
 export const CASE_APPROVED: CaseStatus = 'approved'
 export const CASE_REJECTED: CaseStatus = 'rejected'
+export const CASE_OUTDATED: CaseStatus = 'outdated'
 
 export const DRONE_IDLE: DroneStatus = 'idle'
 export const DRONE_IN_FLIGHT: DroneStatus = 'in_flight'
@@ -20,7 +21,8 @@ export function isCaseStatus(value: string): value is CaseStatus {
   return (
     value === CASE_OPEN ||
     value === CASE_APPROVED ||
-    value === CASE_REJECTED
+    value === CASE_REJECTED ||
+    value === CASE_OUTDATED
   )
 }
 
