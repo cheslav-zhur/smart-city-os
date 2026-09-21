@@ -13,5 +13,6 @@ export interface CaseListItem {
   segment: string;
   status: string;
   drone_status: string;
-  rationale: string | null;
+  dispatcher_opinion: string | null;
+  critic_opinion: string | null;
 }

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>V1-U6: console opinions, audit, orval</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #5a5a5a;
+    --line: #d8d8d0;
+    --bg: #faf9f6;
+    --card: #ffffff;
+    --accent: #0b6e4f;
+    --warn: #8a4b08;
+    --code-bg: #f0efe8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  h1 { font-size: 1.65rem; line-height: 1.25; margin: 0 0 0.75rem; }
+  h2 { font-size: 1.15rem; margin: 2rem 0 0.6rem; }
+  h3 { font-size: 1rem; margin: 1.25rem 0 0.4rem; }
+  p, li { max-width: 70ch; }
+  .meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1rem;
+    margin: 0 0 1.5rem;
+    padding: 0.85rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .meta dt { color: var(--muted); }
+  .meta dd { margin: 0; }
+  .diagram {
+    width: 100%;
+    max-width: 42rem;
+    margin: 1rem 0 1.25rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.75rem;
+    overflow-x: auto;
+  }
+  .diagram svg { display: block; width: 100%; height: auto; }
+  .note {
+    border-left: 3px solid var(--accent);
+    padding: 0.35rem 0 0.35rem 0.85rem;
+    margin: 0.75rem 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .warn {
+    border-left-color: var(--warn);
+  }
+  pre, code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.85rem 1rem;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  .ann {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .ann figure {
+    margin: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .ann figcaption {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    background: #f7f6f1;
+  }
+  .ann pre { margin: 0; border: 0; border-radius: 0; }
+  footer {
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  ul { padding-left: 1.2rem; }
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+  .flow span {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.35rem 0.6rem;
+  }
+  .flow .arrow { border: 0; background: transparent; color: var(--muted); padding: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>V1-U6: консоль видит два голоса и audit</h1>
+  <dl class="meta">
+    <dt>Date</dt>
+    <dd>2026-09-19</dd>
+    <dt>Input shape</dt>
+    <dd>diff</dd>
+    <dt>Subject</dt>
+    <dd>Working tree vs HEAD on main — V1-U6 console opinions, audit, orval (uncommitted)</dd>
+  </dl>
+
+  <p>
+    Юнит не учит worker писать opinions — это уже V1-U5. Здесь ты
+    <strong>открываешь карточку оператору</strong>: API отдаёт то, что уже лежит
+    в колонках, плюс читаемый audit; фронт перестаёт жить на MVP-поле
+    <code>rationale</code>.
+  </p>
+
+  <div class="diagram" aria-hidden="true">
+    <svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg" role="img">
+      <title>Data paths into the case card</title>
+      <rect x="8" y="20" width="150" height="70" rx="6" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+      <text x="83" y="48" text-anchor="middle" font-size="13" fill="#1a1a1a">cases row</text>
+      <text x="83" y="68" text-anchor="middle" font-size="11" fill="#5a5a5a">2 opinion cols</text>
+
+      <rect x="8" y="130" width="150" height="70" rx="6" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+      <text x="83" y="158" text-anchor="middle" font-size="13" fill="#1a1a1a">audit_entries</text>
+      <text x="83" y="178" text-anchor="middle" font-size="11" fill="#5a5a5a">append-only</text>
+
+      <rect x="220" y="70" width="160" height="80" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+      <text x="300" y="100" text-anchor="middle" font-size="13" fill="#1a1a1a">FastAPI</text>
+      <text x="300" y="120" text-anchor="middle" font-size="11" fill="#5a5a5a">GET /cases</text>
+      <text x="300" y="136" text-anchor="middle" font-size="11" fill="#5a5a5a">GET /cases/{id}/audit</text>
+
+      <rect x="450" y="70" width="170" height="80" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+      <text x="535" y="100" text-anchor="middle" font-size="13" fill="#1a1a1a">CaseCard</text>
+      <text x="535" y="120" text-anchor="middle" font-size="11" fill="#5a5a5a">opinions + audit</text>
+      <text x="535" y="136" text-anchor="middle" font-size="11" fill="#5a5a5a">HITL buttons</text>
+
+      <path d="M158 55 H210" stroke="#0b6e4f" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+      <path d="M158 165 H190 V110 H210" stroke="#0b6e4f" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+      <path d="M380 110 H450" stroke="#1a1a1a" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#0b6e4f"/>
+        </marker>
+        <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#1a1a1a"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+  <p class="note">
+    Два источника, один экран: opinions едут в списке кейсов (poll каждые 2с),
+    audit — отдельным GET только для выбранного кейса.
+  </p>
+
+  <h2>1. Почему убрали rationale с консоли</h2>
+  <p>
+    В MVP на карточке было одно nullable-поле <code>rationale</code> — «why»
+    от опциональной модели. В v1 на кейсе уже две колонки
+    (<code>dispatcher_opinion</code>, <code>critic_opinion</code>), а
+    <code>rationale</code> с V1-U3 никто не заполняет. V1-U6 рвёт
+    <em>контракт консоли</em>: DTO больше не врёт, что живой текст — это
+    <code>rationale</code>.
+  </p>
+  <p class="note warn">
+    Колонку в Postgres не дропают (KTD3: один цикл миграций). Dual-write
+    запрещён — старые строки в <code>rationale</code> на карточке не
+    всплывут. Это осознанно.
+  </p>
+
+  <div class="ann">
+    <figure>
+      <pre>class CaseListItem(BaseModel):
+    id: int
+    segment: str
+    status: str
+    drone_status: str
+    dispatcher_opinion: str | None
+    critic_opinion: str | None</pre>
+      <figcaption>
+        Консольный DTO = то, что оператор должен видеть на списке/карточке.
+        Job/lease поля сюда не пускают.
+      </figcaption>
+    </figure>
+  </div>
+
+  <h2>2. Audit: писали давно, читать начали сейчас</h2>
+  <p>
+    Approve/reject и model/tool вызовы уже клали строки в
+    <code>audit_entries</code>. Не хватало <strong>чтения</strong>:
+    <code>GET /cases/{id}/audit</code> → массив
+    <code>{id, actor, action, why, created_at}</code>, oldest first (KTD6).
+  </p>
+  <p>
+    404, если кейса нет — иначе пустой массив до первого действия. После
+    approve в тесте появляется ровно одна строка оператора
+    (<code>demo-operator</code> / <code>approve</code>).
+  </p>
+
+  <h2>3. Orval — почему «схема → dump → gen» в том же юните</h2>
+  <div class="flow">
+    <span>Pydantic / routes</span>
+    <span class="arrow">→</span>
+    <span>make openapi</span>
+    <span class="arrow">→</span>
+    <span>openapi.json</span>
+    <span class="arrow">→</span>
+    <span>pnpm gen:api</span>
+    <span class="arrow">→</span>
+    <span>hooks + models</span>
+  </div>
+  <p>
+    ADR 0007: консоль не копирует пути руками. Как только
+    <code>CaseListItem</code> и audit route меняются, без dump фронт
+    остаётся на старых типах с <code>rationale</code> и падает на типах
+    или в runtime.
+  </p>
+  <p class="note">
+    Мелочь типов: у audit path-параметр, поэтому orval кладёт в union и
+    <code>422</code>. В <code>App.tsx</code> audit берётся только при
+    <code>status === 200</code> — иначе TypeScript не сужает
+    <code>data</code> до массива.
+  </p>
+
+  <h2>4. Карточка: rule-only vs два голоса</h2>
+  <p>
+    Правило открыло кейс без модели → оба opinion <code>null</code> →
+    один fallback: <em>«Rule opened the case. No model proposal.»</em>
+    Кнопки Send/Dismiss всё равно на <code>open</code> (ADR 0002 /
+    KTD9): «уверенный» proposal — это оба opinion non-null после
+    fenced persist, не статус job.
+  </p>
+  <p>
+    Как только хотя бы один текст есть — два блока Dispatcher / Critic
+    (пустой слот показывает «—»).
+  </p>
+
+  <h2>5. Poll: три потока, не один</h2>
+  <p>
+    Как и раньше: cases и events каждые 2с. Новое: audit того же интервала
+    <strong>только пока выбран кейс</strong>
+    (<code>enabled: selectedId != null</code>). После decide
+    инвалидируются и cases, и audit — иначе операторская строка
+    появилась бы только на следующем тике poll.
+  </p>
+
+  <div class="ann">
+    <figure>
+      <pre>const auditQuery = useGetCaseAuditCasesCaseIdAuditGet(
+  selectedId ?? 0,
+  {
+    query: {
+      enabled: selectedId != null,
+      refetchInterval: POLL_MS,
+    },
+  },
+)</pre>
+      <figcaption>
+        <code>?? 0</code> — заглушка для сигнатуры hook (number required);
+        запрос не уходит, пока enabled false. Не путать с реальным case id 0.
+      </figcaption>
+    </figure>
+  </div>
+
+  <h2>Что юнит сознательно не делает</h2>
+  <ul>
+    <li>Не трогает worker / StateGraph / запись opinions.</li>
+    <li>Не дропает колонку <code>rationale</code>.</li>
+    <li>Не показывает kind на ленте как chip (отложено в плане).</li>
+    <li>Не добавляет Compose worker — это V1-U7.</li>
+  </ul>
+
+  <h2>Как проверить у себя</h2>
+  <ul>
+    <li><code>make test-api</code> — opinions в list, audit после approve, 404.</li>
+    <li><code>pnpm test</code> в <code>apps/web</code> — кнопки + empty copy + два лейбла.</li>
+    <li>Вручную: без key — fallback и пустой audit; approve — строка оператора; с worker+key — два блока opinion и tool/model rows.</li>
+  </ul>
+
+  <footer>Composed 2026-09-19 by ce-explain</footer>
+</main>
+</body>
+</html>

@@ -4,11 +4,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.cases.schemas import CaseDecisionOut, CaseListItem
+from app.audit.service import list_audit_for_case
+from app.cases.schemas import AuditListItem, CaseDecisionOut, CaseListItem
 from app.cases.service import (
     CaseAlreadyDecidedError,
     CaseNotFoundError,
     approve_case,
+    get_case,
     list_cases,
     reject_case,
 )
@@ -28,9 +30,28 @@ def get_cases(
             segment=case.segment,
             status=case.status,
             drone_status=case.drone_status,
-            rationale=case.rationale,
+            dispatcher_opinion=case.dispatcher_opinion,
+            critic_opinion=case.critic_opinion,
         )
         for case in list_cases(session)
+    ]
+
+
+@router.get("/cases/{case_id}/audit")
+def get_case_audit(
+    case_id: int, session: Annotated[Session, Depends(get_session)]
+) -> list[AuditListItem]:
+    if get_case(session, case_id) is None:
+        raise HTTPException(status_code=404, detail="case not found")
+    return [
+        AuditListItem(
+            id=entry.id,
+            actor=entry.actor,
+            action=entry.action,
+            why=entry.why,
+            created_at=entry.created_at,
+        )
+        for entry in list_audit_for_case(session, case_id)
     ]
 
 

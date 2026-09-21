@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import AuditEntry
@@ -7,6 +8,17 @@ ACTION_APPROVE = "approve"
 ACTION_REJECT = "reject"
 WHY_APPROVE = "approved send drone"
 WHY_REJECT = "rejected send drone"
+
+
+def list_audit_for_case(session: Session, case_id: int) -> list[AuditEntry]:
+    """Append-only audit rows for a case, oldest first."""
+    return list(
+        session.scalars(
+            select(AuditEntry)
+            .where(AuditEntry.case_id == case_id)
+            .order_by(AuditEntry.id.asc())
+        ).all()
+    )
 
 
 def write_audit(session: Session, case_id: int, action: str, why: str) -> AuditEntry:

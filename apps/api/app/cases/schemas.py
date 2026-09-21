@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -8,7 +10,8 @@ class CaseListItem(BaseModel):
     segment: str
     status: str
     drone_status: str
-    rationale: str | None
+    dispatcher_opinion: str | None
+    critic_opinion: str | None
 
 
 class CaseDecisionOut(BaseModel):
@@ -17,3 +20,13 @@ class CaseDecisionOut(BaseModel):
     id: int
     status: str
     drone_status: str
+
+
+class AuditListItem(BaseModel):
+    """One append-only audit row for the case card (KTD6)."""
+
+    id: int
+    actor: str
+    action: str
+    why: str | None
+    created_at: datetime

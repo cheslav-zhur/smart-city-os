@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react'
+import type { AuditListItem } from '../../../api/generated/models/auditListItem'
 import type { CaseListItem } from '../../../api/generated/models/caseListItem'
 import type { EventTapeItem } from '../../../api/generated/models/eventTapeItem'
 import { formatRelativeTime, isCollapseSpeed } from '../../../shared/lib/time'
 import { Button, EmptyState, Panel, SimCommand } from '../../../shared/ui'
 import type { DecideKind } from '../decide'
-import { CASE_OPEN, formatDroneStatus } from '../domain'
+import { CASE_OPEN, EMPTY_OPINIONS_COPY, formatDroneStatus } from '../domain'
 import { StatusChip } from '../StatusChip'
 
 type CaseCardProps = {
   caseRow: CaseListItem | null
   speeds: EventTapeItem[]
+  audit: AuditListItem[]
   busy: boolean
   busyKind: DecideKind | null
   casesLoading?: boolean
   speedsLoading?: boolean
+  auditLoading?: boolean
+  /** True when the audit GET failed — do not show the empty-ledger copy. */
+  auditError?: boolean
   onApprove: () => void
   onReject: () => void
 }
@@ -21,10 +26,13 @@ type CaseCardProps = {
 export function CaseCard({
   caseRow,
   speeds,
+  audit,
   busy,
   busyKind,
   casesLoading = false,
   speedsLoading = false,
+  auditLoading = false,
+  auditError = false,
   onApprove,
   onReject,
 }: CaseCardProps) {
@@ -42,6 +50,11 @@ export function CaseCard({
 
   const newestCollapseId = speeds.find((row) => isCollapseSpeed(row.speed))
     ?.event_id
+
+  const bothOpinionsEmpty =
+    caseRow !== null &&
+    caseRow.dispatcher_opinion == null &&
+    caseRow.critic_opinion == null
 
   return (
     <Panel as="section" padding="lg">
@@ -66,14 +79,19 @@ export function CaseCard({
           <p className="mb-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Send a drone to look
           </p>
-          {caseRow.rationale ? (
-            <p className="mb-6 max-w-2xl text-[0.95rem] leading-relaxed text-slate-600 dark:text-slate-300">
-              {caseRow.rationale}
+
+          {bothOpinionsEmpty ? (
+            <p className="mb-6 max-w-2xl text-[0.95rem] leading-relaxed text-slate-500 dark:text-slate-400">
+              {EMPTY_OPINIONS_COPY}
             </p>
           ) : (
-            <p className="mb-6 max-w-2xl text-[0.95rem] leading-relaxed text-slate-500 dark:text-slate-400">
-              Rule proposal is ready. Confirm to dispatch, or dismiss.
-            </p>
+            <div className="mb-6 grid max-w-2xl gap-4">
+              <OpinionBlock
+                label="Dispatcher"
+                text={caseRow.dispatcher_opinion}
+              />
+              <OpinionBlock label="Critic" text={caseRow.critic_opinion} />
+            </div>
           )}
 
           <div className="mb-10 flex flex-wrap gap-3">
@@ -101,6 +119,59 @@ export function CaseCard({
           speed collapse.
         </EmptyState>
       )}
+
+      {caseRow !== null ? (
+        <div className="mb-10 border-t border-slate-900/5 pt-6 dark:border-white/5">
+          <h2 className="mb-4 text-sm font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
+            Audit
+          </h2>
+          {auditError ? (
+            <EmptyState title="Could not load audit">
+              Retry will follow the next poll, or pick the case again.
+            </EmptyState>
+          ) : auditLoading && audit.length === 0 ? (
+            <div className="space-y-2" aria-hidden="true">
+              {[0, 1].map((key) => (
+                <div
+                  key={key}
+                  className="h-8 animate-pulse rounded bg-slate-900/5 dark:bg-white/5"
+                />
+              ))}
+            </div>
+          ) : audit.length === 0 ? (
+            <EmptyState title="No audit rows yet">
+              Model and operator actions appear here after the worker or a
+              decision.
+            </EmptyState>
+          ) : (
+            <ul className="m-0 list-none space-y-3 p-0">
+              {audit.map((row) => (
+                <li
+                  key={row.id}
+                  className="border-t border-slate-900/5 pt-3 text-sm first:border-t-0 first:pt-0 dark:border-white/5"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="font-medium text-slate-800 dark:text-slate-100">
+                      {row.actor} · {row.action}
+                    </span>
+                    <span
+                      className="text-xs text-slate-500 dark:text-slate-400"
+                      title={row.created_at}
+                    >
+                      {formatRelativeTime(row.created_at, nowMs)}
+                    </span>
+                  </div>
+                  {row.why ? (
+                    <p className="mt-1 m-0 text-slate-600 dark:text-slate-300">
+                      {row.why}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
 
       <div className="border-t border-slate-900/5 pt-6 dark:border-white/5">
         <h2 className="mb-4 text-sm font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
@@ -171,5 +242,24 @@ export function CaseCard({
         )}
       </div>
     </Panel>
+  )
+}
+
+function OpinionBlock({
+  label,
+  text,
+}: {
+  label: string
+  text: string | null
+}) {
+  return (
+    <div>
+      <h3 className="mb-1 text-xs font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
+        {label}
+      </h3>
+      <p className="m-0 text-[0.95rem] leading-relaxed text-slate-600 dark:text-slate-300">
+        {text ?? '—'}
+      </p>
+    </div>
   )
 }

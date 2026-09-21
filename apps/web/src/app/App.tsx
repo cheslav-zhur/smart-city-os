@@ -2,7 +2,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import {
   getCasesCasesGet,
+  getGetCaseAuditCasesCaseIdAuditGetQueryKey,
   getGetCasesCasesGetQueryKey,
+  useGetCaseAuditCasesCaseIdAuditGet,
   useGetCasesCasesGet,
   usePostApproveCasesCaseIdApprovePost,
   usePostRejectCasesCaseIdRejectPost,
@@ -60,9 +62,19 @@ export default function App() {
   const eventsQuery = useGetEventsEventsGet({
     query: { refetchInterval: POLL_MS },
   })
+  const auditQuery = useGetCaseAuditCasesCaseIdAuditGet(selectedId ?? 0, {
+    query: {
+      enabled: selectedId != null,
+      refetchInterval: POLL_MS,
+    },
+  })
 
   const cases = casesQuery.data?.data ?? []
   const speeds = (eventsQuery.data?.data ?? []).slice(0, LAST_SPEED_COUNT)
+  const auditResponse = auditQuery.data
+  const audit =
+    auditResponse?.status === 200 ? auditResponse.data : []
+  const auditError = selectedId != null && auditQuery.isError
   const loadError = casesQuery.isError || eventsQuery.isError
   const initialLoading =
     (casesQuery.isLoading && casesQuery.data == null) ||
@@ -70,7 +82,10 @@ export default function App() {
   const liveUpdating =
     !initialLoading &&
     !loadError &&
-    (casesQuery.isFetching || eventsQuery.isFetching)
+    !auditError &&
+    (casesQuery.isFetching ||
+      eventsQuery.isFetching ||
+      (selectedId != null && auditQuery.isFetching))
 
   useEffect(() => {
     if (!casesQuery.isSuccess || !eventsQuery.isSuccess || casesQuery.data == null) {
@@ -130,9 +145,14 @@ export default function App() {
           }
         },
       )
-      await queryClient.invalidateQueries({
-        queryKey: getGetCasesCasesGetQueryKey(),
-      })
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: getGetCasesCasesGetQueryKey(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getGetCaseAuditCasesCaseIdAuditGetQueryKey(selectedId),
+        }),
+      ])
     } catch {
       // Poll will refresh status; a repeat POST is 409 once decided.
       setDecideError(true)
@@ -176,6 +196,11 @@ export default function App() {
                 Could not load cases or events.
               </p>
             ) : null}
+            {auditError ? (
+              <p className="m-0 text-rose-700 dark:text-rose-300">
+                Could not load audit.
+              </p>
+            ) : null}
             {decideError ? (
               <p className="m-0 text-rose-700 dark:text-rose-300">
                 Could not apply approve or reject.
@@ -200,10 +225,18 @@ export default function App() {
         <CaseCard
           caseRow={selected}
           speeds={speeds}
+          audit={audit}
           busy={busy}
           busyKind={busyKind}
           casesLoading={casesQuery.isLoading && casesQuery.data == null}
           speedsLoading={eventsQuery.isLoading && eventsQuery.data == null}
+          auditLoading={
+            selectedId != null &&
+            auditQuery.isLoading &&
+            auditQuery.data == null &&
+            !auditError
+          }
+          auditError={auditError}
           onApprove={() => {
             void decide('approve')
           }}

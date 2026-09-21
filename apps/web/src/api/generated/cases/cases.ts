@@ -24,6 +24,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AuditListItem,
   CaseDecisionOut,
   CaseListItem,
   HTTPValidationError
@@ -152,6 +153,125 @@ export function useGetCasesCasesGet<TData = Awaited<ReturnType<typeof getCasesCa
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetCasesCasesGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type getCaseAuditCasesCaseIdAuditGetResponse200 = {
+  data: AuditListItem[]
+  status: 200
+}
+
+export type getCaseAuditCasesCaseIdAuditGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getCaseAuditCasesCaseIdAuditGetResponseSuccess = (getCaseAuditCasesCaseIdAuditGetResponse200) & {
+  headers: Headers;
+};
+export type getCaseAuditCasesCaseIdAuditGetResponseError = (getCaseAuditCasesCaseIdAuditGetResponse422) & {
+  headers: Headers;
+};
+
+export type getCaseAuditCasesCaseIdAuditGetResponse = (getCaseAuditCasesCaseIdAuditGetResponseSuccess | getCaseAuditCasesCaseIdAuditGetResponseError)
+
+export const getGetCaseAuditCasesCaseIdAuditGetUrl = (caseId: number,) => {
+
+
+
+
+  return `/api/cases/${caseId}/audit`
+}
+
+/**
+ * @summary Get Case Audit
+ */
+export const getCaseAuditCasesCaseIdAuditGet = async (caseId: number, options?: Parameters<typeof customFetch>[1]): Promise<getCaseAuditCasesCaseIdAuditGetResponse> => {
+
+  return customFetch<getCaseAuditCasesCaseIdAuditGetResponse>(getGetCaseAuditCasesCaseIdAuditGetUrl(caseId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCaseAuditCasesCaseIdAuditGetQueryKey = (caseId: number,) => {
+    return [
+    `/api/cases/${caseId}/audit`
+    ] as const;
+    }
+
+
+export const getGetCaseAuditCasesCaseIdAuditGetQueryOptions = <TData = Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError = HTTPValidationError>(caseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCaseAuditCasesCaseIdAuditGetQueryKey(caseId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>> = ({ signal }) => getCaseAuditCasesCaseIdAuditGet(caseId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: caseId !== null && caseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCaseAuditCasesCaseIdAuditGetQueryResult = NonNullable<Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>>
+export type GetCaseAuditCasesCaseIdAuditGetQueryError = HTTPValidationError
+
+
+export function useGetCaseAuditCasesCaseIdAuditGet<TData = Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError = HTTPValidationError>(
+ caseId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>,
+          TError,
+          Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCaseAuditCasesCaseIdAuditGet<TData = Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError = HTTPValidationError>(
+ caseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>,
+          TError,
+          Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCaseAuditCasesCaseIdAuditGet<TData = Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError = HTTPValidationError>(
+ caseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Case Audit
+ */
+
+export function useGetCaseAuditCasesCaseIdAuditGet<TData = Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError = HTTPValidationError>(
+ caseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCaseAuditCasesCaseIdAuditGet>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCaseAuditCasesCaseIdAuditGetQueryOptions(caseId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

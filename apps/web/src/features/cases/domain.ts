@@ -12,6 +12,10 @@ export const DRONE_IDLE: DroneStatus = 'idle'
 export const DRONE_IN_FLIGHT: DroneStatus = 'in_flight'
 export const DRONE_ON_SITE: DroneStatus = 'on_site'
 
+/** Card copy when both opinion columns are null (rule-only case). */
+export const EMPTY_OPINIONS_COPY =
+  'Rule opened the case. No model proposal.'
+
 export function isCaseStatus(value: string): value is CaseStatus {
   return (
     value === CASE_OPEN ||

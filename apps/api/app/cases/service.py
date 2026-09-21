@@ -114,6 +114,11 @@ def _is_jam(samples: list[Event]) -> bool:
     return any(sample.speed > JAM_MAX for sample in prior)
 
 
+def get_case(session: Session, case_id: int) -> Case | None:
+    """Return one case row, or None if missing."""
+    return session.get(Case, case_id)
+
+
 def list_cases(session: Session) -> list[Case]:
     """All cases (open and decided), newest first by serial id."""
     return list(session.scalars(select(Case).order_by(Case.id.desc())).all())

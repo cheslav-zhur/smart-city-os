@@ -26,7 +26,7 @@ def clear_settings_cache():
     get_settings.cache_clear()
 
 
-def test_unset_key_leaves_rationale_null_and_case_approvable(
+def test_unset_key_leaves_opinions_null_and_case_approvable(
     client, db_session, monkeypatch
 ) -> None:
     monkeypatch.delenv("LLM_API_KEY", raising=False)
@@ -43,14 +43,16 @@ def test_unset_key_leaves_rationale_null_and_case_approvable(
     assert case.critic_opinion is None
 
     listed = client.get("/cases").json()
-    assert listed[0]["rationale"] is None
+    assert listed[0]["dispatcher_opinion"] is None
+    assert listed[0]["critic_opinion"] is None
+    assert "rationale" not in listed[0]
 
     approve = client.post(f"/cases/{case_id}/approve")
     assert approve.status_code == 200
     assert approve.json()["status"] == "approved"
 
 
-def test_set_key_on_api_still_leaves_rationale_null(
+def test_set_key_on_api_still_leaves_opinions_null(
     client, db_session, monkeypatch
 ) -> None:
     """API process may have a key in env; ingest must still leave the card empty."""
@@ -69,4 +71,6 @@ def test_set_key_on_api_still_leaves_rationale_null(
     assert case.critic_opinion is None
 
     listed = client.get("/cases").json()
-    assert listed[0]["rationale"] is None
+    assert listed[0]["dispatcher_opinion"] is None
+    assert listed[0]["critic_opinion"] is None
+    assert "rationale" not in listed[0]

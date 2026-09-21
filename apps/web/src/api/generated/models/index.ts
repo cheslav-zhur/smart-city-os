@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './auditListItem';
 export * from './caseDecisionOut';
 export * from './caseListItem';
 export * from './eventIn';

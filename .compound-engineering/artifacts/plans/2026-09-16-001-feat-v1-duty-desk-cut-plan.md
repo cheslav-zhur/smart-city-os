@@ -273,7 +273,7 @@ GitHub issues are an index. Status stays in this file. Unit ids for this cut are
 | V1-U3 | [#4](https://github.com/happylolonly/smart-city-os/issues/4) | done |
 | V1-U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) | done |
 | V1-U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) | done |
-| V1-U6 | [#7](https://github.com/happylolonly/smart-city-os/issues/7) | |
+| V1-U6 | [#7](https://github.com/happylolonly/smart-city-os/issues/7) | done |
 | V1-U7 | not opened — say so before writing this unit; do not open unasked | |
 
 Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit commits end with `Closes #n`. Mark **Status** here in the same step as the unit commit. Push to `main` only when the CTO asks; that push closes the issue.
@@ -419,6 +419,8 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
 
 ### V1-U6. Console opinions, audit, orval
 
+- **Status:** done
+- **Explainer:** [`.compound-engineering/artifacts/explainers/2026-09-19-v1-u6-console-opinions-audit.html`](../explainers/2026-09-19-v1-u6-console-opinions-audit.html)
 - **Goal:** Card shows two opinions and audit. Buttons still only on `open`.
 - **Requirements:** R12, R13
 - **Dependencies:** V1-U1

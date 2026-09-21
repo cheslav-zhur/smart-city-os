@@ -92,6 +92,52 @@
         }
       }
     },
+    "/cases/{case_id}/audit": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Get Case Audit",
+        "operationId": "get_case_audit_cases__case_id__audit_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditListItem"
+                  },
+                  "title": "Response Get Case Audit Cases  Case Id  Audit Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/cases/{case_id}/approve": {
       "post": {
         "tags": [
@@ -201,6 +247,48 @@
   },
   "components": {
     "schemas": {
+      "AuditListItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "actor": {
+            "type": "string",
+            "title": "Actor"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "actor",
+          "action",
+          "why",
+          "created_at"
+        ],
+        "title": "AuditListItem",
+        "description": "One append-only audit row for the case card (KTD6)."
+      },
       "CaseDecisionOut": {
         "properties": {
           "id": {
@@ -243,7 +331,7 @@
             "type": "string",
             "title": "Drone Status"
           },
-          "rationale": {
+          "dispatcher_opinion": {
             "anyOf": [
               {
                 "type": "string"
@@ -252,7 +340,18 @@
                 "type": "null"
               }
             ],
-            "title": "Rationale"
+            "title": "Dispatcher Opinion"
+          },
+          "critic_opinion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Critic Opinion"
           }
         },
         "type": "object",
@@ -261,7 +360,8 @@
           "segment",
           "status",
           "drone_status",
-          "rationale"
+          "dispatcher_opinion",
+          "critic_opinion"
         ],
         "title": "CaseListItem",
         "description": "Console case row: card fields only, no audit or timestamps."

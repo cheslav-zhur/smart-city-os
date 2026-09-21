@@ -8,6 +8,7 @@ export {
   DRONE_IDLE,
   DRONE_IN_FLIGHT,
   DRONE_ON_SITE,
+  EMPTY_OPINIONS_COPY,
   formatDroneStatus,
   isCaseStatus,
   isDroneStatus,
