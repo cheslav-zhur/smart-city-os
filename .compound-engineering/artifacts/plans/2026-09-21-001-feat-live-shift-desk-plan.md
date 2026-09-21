@@ -321,7 +321,7 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
 |------|-------|--------|
 | U1 | [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9) | done |
 | U2 | [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9) | done |
-| U3 | not opened — say so before writing this unit; do not open unasked | |
+| U3 | — | done |
 | U4 | not opened — say so before writing this unit; do not open unasked | |
 | U5 | not opened — say so before writing this unit; do not open unasked | |
 
@@ -390,6 +390,7 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
 
 ### U3. Sticky card and recent window
 
+- **Status:** done
 - **Goal:** A new open appears at the top and does not steal the selected card. The list shows about ten newest rows and keeps the selected row visible.
 - **Requirements:** R8, R9, R10. F3. AE3. KTD6.
 - **Dependencies:** U2

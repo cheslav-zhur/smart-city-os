@@ -1,5 +1,10 @@
 export { CaseCard } from './CaseCard/CaseCard'
 export { CaseList } from './CaseList'
+export {
+  CASE_LIST_WINDOW,
+  nextSelectedId,
+  visibleCases,
+} from './caseWindow'
 export type { DecideKind } from './decide'
 export {
   CASE_APPROVED,
