@@ -1,5 +1,3 @@
-from datetime import UTC, datetime, timedelta
-
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
@@ -32,8 +30,6 @@ CASE_OPEN = "open"
 CASE_APPROVED = "approved"
 CASE_REJECTED = "rejected"
 CASE_OUTDATED = "outdated"
-# Same class as COLLAPSE_MAX: named module constant, not a Settings knob.
-OPEN_GRACE = timedelta(seconds=20)
 
 
 class CaseNotFoundError(LookupError):
@@ -50,17 +46,14 @@ def maybe_open_case(session: Session, segment: str, kind: str) -> Case | None:
     The window is the shared speed tape on the segment, newest first. Kind
     selects the rule; it does not filter out samples of another kind.
 
-    An in-grace open holds the slot. After grace, a matching rule displaces
-    that row to outdated in the same occupancy step, then inserts the new open.
+    A matching rule displaces any current open in the same occupancy step,
+    then inserts the new open. A non-matching event leaves the open slot.
     """
     existing = session.scalar(
         select(Case)
         .where(Case.segment == segment, Case.status == CASE_OPEN)
         .with_for_update()
     )
-    if existing is not None and not _open_grace_elapsed(existing):
-        return None
-
     samples = _recent_samples(session, segment, limit=JAM_SLOW_WINDOW + JAM_PRIOR_WINDOW)
     if not _rule_matches(kind, samples):
         return None
@@ -77,13 +70,6 @@ def maybe_open_case(session: Session, segment: str, kind: str) -> Case | None:
     session.add(case)
     session.flush()
     return case
-
-
-def _open_grace_elapsed(case: Case) -> bool:
-    created = case.created_at
-    if created.tzinfo is None:
-        created = created.replace(tzinfo=UTC)
-    return datetime.now(UTC) - created >= OPEN_GRACE
 
 
 def _displace_open_case(session: Session, case: Case) -> None:

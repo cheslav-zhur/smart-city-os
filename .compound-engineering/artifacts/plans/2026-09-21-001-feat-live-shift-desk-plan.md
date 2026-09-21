@@ -14,7 +14,7 @@ origin: docs/scope/02-v1.md
 
 ## Goal Capsule
 
-- **Objective:** Turn the duty desk into a usable live shift on segment A: a continuous unique incident stream, one `open` case at a time, a grace window then `outdated` when the next incident opens, kind on the list and card, newest cases on top, about ten on screen plus the selected row if it aged off.
+- **Objective:** Turn the duty desk into a usable live shift on segment A: a continuous unique incident stream, one `open` case at a time, `outdated` when the next incident opens, kind on the list and card, newest cases on top, about ten on screen plus the selected row if it aged off.
 - **Authority:** `docs/scope/02-v1.md` for horizon identity. The first duty-desk cut [`.compound-engineering/artifacts/plans/2026-09-16-001-feat-v1-duty-desk-cut-plan.md`](2026-09-16-001-feat-v1-duty-desk-cut-plan.md) stays the record of V1-U1–V1-U7. This file is the execution contract for the next named cut only. Do not rewrite that plan’s completed units as if they always had a live stream or `outdated`. ADR 0002 still owns human-gated drone. No new ADR in this cut.
 - **Execution profile:** Standard. Named tests with each feature-bearing unit. Occupancy (U1) may go test-first on the API loop; other units ship named tests without red-first. Parent chat runs **one unit at a time**. Do not open a GitHub issue until the CTO names the cut. Do not start a unit that has no issue once the cut is named.
 - **Stop if:** a second `open` lands on segment A; a miss is written as operator `rejected`; Send flies after `outdated`; the card auto-jumps to a new open; Last speeds gains a kind column; MIXED_TAPE becomes the live loop; the first-cut plan’s done units or KTD4 are rewritten; ADR 0002 is edited in place; Kafka/map/microservices/DDD split enter the diff.
@@ -33,7 +33,7 @@ The first v1 cut is a one-shot mixed tape. Collapse occupies the only `open` slo
 ### Key Decisions
 
 - Occupancy stays one `open` per segment. A miss is a fourth status `outdated`, not a fake operator reject and not a queue of several `open` cases. `(session-settled: user-directed — chosen over system-reject and over several open cases: miss must be honest and the road stays one incident)` Governs R3, R5, R6.
-- Displacement happens only after a grace window and only when a new rule would open a case. `(session-settled: user-directed — chosen over instant displace and over waiting until Send/Dismiss: operator gets a chance, then the shift continues)` Governs R4, R5.
+- Displacement happens as soon as a new rule would open a case. No grace window. `(session-settled: user-directed — instant displace chosen over a 20s hold: a new matching incident must be able to open immediately)` Governs R4, R5.
 - The open card does not jump to the new case. Buttons on the displaced case disable even if that card is still selected. `(session-settled: user-directed — chosen over auto-jumping the card: the operator keeps the row they are reading)` Governs R8, R9.
 - The simulator is an endless unique incident stream, not a loop of the canned mixed tape and not a single finite run. `(session-settled: user-directed — chosen over looping MIXED_TAPE and over one longer tape: the desk must stay alive until stopped)` Governs R1, R2.
 - The console list shows the newest ~10 cases, plus the selected row if it aged off that window. Older unselected rows stay in the store. `(session-settled: user-approved — chosen over full history on screen and over open-plus-two: tune after the first live shift)` Governs R10.
@@ -47,7 +47,7 @@ This plan owns the **live shift desk**: continuous incidents, `outdated`, recent
 
 - First cut V1-U1–V1-U7 ([`2026-09-16-001-feat-v1-duty-desk-cut-plan.md`](2026-09-16-001-feat-v1-duty-desk-cut-plan.md)) — **Depends on** that cut already shipped (rules, worker, opinions, audit, one-open unique, canned MIXED_TAPE demo). This cut **supersedes** that plan’s occupancy KTD (`open | approved | rejected` only) and the one-shot mixed-tape demo path for the next named units. Do not edit those completed unit sections to pretend they included `outdated`.
 - Horizon `docs/scope/02-v1.md` — **Shares** the short-shift identity. U5 updates that file’s “Done enough” and “explicit case states” so horizon text matches the live stream and `outdated`. Not a silent rewrite of the first cut.
-- ADR — **No new ADR this cut.** Fourth status is a plan occupancy KTD plus horizon copy. Do not edit ADR 0002. Skip an ADR for the 20s / last-10 knobs. `(session-settled: user-approved — chosen over locking outdated in a new ADR: reversible without editing 0002)`
+- ADR — **No new ADR this cut.** Fourth status is a plan occupancy KTD plus horizon copy. Do not edit ADR 0002. Skip an ADR for the last-10 knob. `(session-settled: user-approved — chosen over locking outdated in a new ADR: reversible without editing 0002)`
 - Kind column on Last speeds — **Can proceed independently of** this cut; deferred here.
 - Backend DDD modules under `apps/api` — **Can proceed independently of** this cut; already named as a later CTO cut on the first-cut plan.
 
@@ -61,8 +61,8 @@ This plan owns the **live shift desk**: continuous incidents, `outdated`, recent
 **Occupancy**
 
 - R3. Across all kinds, segment A still has at most one case with status `open`.
-- R4. While a case is `open` and still inside the grace window, a matching later kind persists as an event and does not open a second case.
-- R5. After grace, when a rule would open a new case, the previous `open` case becomes `outdated` in the same occupancy step as the new `open` case. Send and Dismiss on the outdated case are disabled. The drone stays idle.
+- R4. While a case is `open`, an event whose kind rule does not match persists and does not open a second case.
+- R5. When a rule would open a new case, the previous `open` case becomes `outdated` in the same occupancy step as the new `open` case. Send and Dismiss on the outdated case are disabled. The drone stays idle.
 - R6. `outdated` is not an operator approve or reject. Approve and reject remain operator-only on `open`. Per ADR 0002.
 - R7. Leftover model work for an outdated case must not persist opinions or change drone status. Same leftover rule as operator decide on the first cut.
 
@@ -83,18 +83,18 @@ This plan owns the **live shift desk**: continuous incidents, `outdated`, recent
 
 - A1. Duty operator — works a live shift: list, card, kind, Send/Dismiss on `open` only.
 - A2. Simulator — HTTP posts only; never writes the database; runs until stopped.
-- A3. Ingest rule — opens at most one `open` case; after grace, displaces to `outdated` then opens the next.
+- A3. Ingest rule — opens at most one `open` case; a matching later rule displaces to `outdated` then opens the next.
 - A4. Job worker — may still run after displace; must not write opinions onto `outdated`.
 
 ### Key Flows
 
-- F1. Decide inside grace
-  - **Trigger:** A case is `open` and still inside grace. The operator presses Send or Dismiss.
+- F1. Decide while open
+  - **Trigger:** A case is `open`. The operator presses Send or Dismiss.
   - **Actors:** A1, A3
   - **Steps:** Case becomes approved or rejected. Drone rules unchanged from the first cut. Later incidents may open a new `open` case.
   - **Outcome:** No `outdated`. Covered by R3, R4, R6.
 - F2. Miss then displace
-  - **Trigger:** Grace has elapsed. A new event matches a rule while an `open` case still exists.
+  - **Trigger:** A new event matches a rule while an `open` case still exists.
   - **Actors:** A2, A3, A4
   - **Steps:** Persist the event. Set the previous case `outdated`, disable its buttons, write the system audit row, refuse leftover opinion persist. Open the new `open` case.
   - **Outcome:** One `open` on the road. Covered by R3, R5, R7, R14.
@@ -109,7 +109,7 @@ stateDiagram-v2
   [*] --> open: rule opens
   open --> approved: operator Send
   open --> rejected: operator Dismiss
-  open --> outdated: grace elapsed and next rule would open
+  open --> outdated: next rule would open
   approved --> [*]
   rejected --> [*]
   outdated --> [*]
@@ -119,14 +119,14 @@ Buttons and drone flight exist only on `open`. `outdated` is a miss, not a close
 
 ### Acceptance Examples
 
-- AE1. Grace holds the slot
-  - **Covers R4.**
-  - **Given:** Case 1 is `open` and grace has not elapsed.
-  - **When:** A speeding sample arrives that would otherwise open.
-  - **Then:** The event is stored. No second case. Case 1 still `open`. Buttons still enabled.
-- AE2. After grace, the next incident displaces
+- AE1. Matching later kind displaces immediately
   - **Covers R5, R14.**
-  - **Given:** Case 1 is `open` and grace has elapsed.
+  - **Given:** Case 1 is `open`.
+  - **When:** A speeding sample arrives that would otherwise open.
+  - **Then:** Case 1 is `outdated` with Send/Dismiss disabled and a system audit row. Case 2 is `open` with trigger kind speeding. Still one `open`.
+- AE2. A later jam displaces
+  - **Covers R5, R14.**
+  - **Given:** Case 1 is `open`.
   - **When:** A jam sequence matches its rule.
   - **Then:** Case 1 is `outdated` with Send/Dismiss disabled and a system audit row. Case 2 is `open` with trigger kind jam, newest in the list.
 - AE3. Card does not jump
@@ -136,7 +136,7 @@ Buttons and drone flight exist only on `open`. `outdated` is a miss, not a close
   - **Then:** Case 1 remains selected, buttons disabled. Case 2 is visible at the top. The operator must click case 2 to work it.
 - AE4. Decide beats displace
   - **Covers R6.**
-  - **Given:** Case 1 is `open` inside grace.
+  - **Given:** Case 1 is `open`.
   - **When:** The operator dismisses, then a later kind would open.
   - **Then:** Case 1 is `rejected`, not `outdated`. A new `open` case may open.
 - AE5. Stream is not MIXED_TAPE
@@ -168,7 +168,7 @@ Buttons and drone flight exist only on `open`. `outdated` is a miss, not a close
 
 ### Dependencies / Assumptions
 
-- A1. Grace window starts at about 20 seconds from case open. Tune after the first live shift. Not an ADR.
+- A1. No grace window. A matching rule displaces immediately. Not an ADR.
 - A2. Console list window starts at 10 newest cases union the selected id. Tune after the first live shift.
 - A3. Leftover worker persist after `outdated` follows the first-cut leftover-after-decide rule (R7).
 - Depends on the first duty-desk cut already on `main` for rules, worker, opinions, audit, and one-open uniqueness.
@@ -191,18 +191,18 @@ None blocking. Planning resolved generator shape, demo vs fixture, and ADR vs pl
 
 ### Product Contract preservation
 
-Product Contract requirements, actors, flows, and acceptance examples unchanged except R10, the list Key Decision, Goal Capsule, and list-cap assumption: the confirmed window is newest ~10 union the selected row. Outstanding Questions resolved into KTDs. How This Work Fits Together ADR line updated (no new ADR this cut).
+Living Product Contract, KTDs, and diagrams above are the occupancy spec for remaining units. List window remains newest ~10 union the selected row. No new ADR this cut. 2026-09-21 instant displace is recorded in Amendments; U1 unit text stays as shipped.
 
 ### Key Technical Decisions
 
-- KTD1. Grace is `now(UTC) - cases.created_at` versus a module constant (~20s, same class as `COLLAPSE_MAX`). Do not use `event.recorded_at` and do not add a Settings/env knob. Instantiates R4, A1.
-- KTD2. Occupancy stays in `maybe_open_case`. If an `open` row exists and grace has not elapsed, persist the event and return no case. If grace has elapsed and the incoming kind’s rule matches, one occupancy step: lock that open row, set it `outdated` with drone still idle, write the system audit row, cancel `pending` jobs (same helper as decide), then insert the new `open` case. Serialize concurrent ingest with a row lock so two matching posts cannot create two opens. The partial unique index on `status='open'` stays. Instantiates R3, R4, R5, R7, R14.
+- KTD1. No grace window. Do not compare `cases.created_at` to a hold, and do not add a Settings/env knob. Instantiates R4, R5, A1.
+- KTD2. Occupancy stays in `maybe_open_case`. If the incoming kind’s rule does not match, persist the event and return no case. If it matches, one occupancy step: lock the current open row if any, set it `outdated` with drone still idle, write the system audit row, cancel `pending` jobs (same helper as decide), then insert the new `open` case. Serialize concurrent ingest with a row lock so two matching posts cannot create two opens. The partial unique index on `status='open'` stays. Instantiates R3, R4, R5, R7, R14.
 - KTD3. `outdated` is another string on `cases.status`, like `open` / `approved` / `rejected`. No case-status check constraint and no new ADR. Horizon copy in U5 is the durable product text. `(session-settled: user-approved — chosen over a new ADR locking outdated: reversible without editing 0002)` Instantiates R5, R6.
 - KTD4. System audit uses `write_audit_entry` with actor `system`, action `outdated`, and a short fixed why. Not `AUDIT_ACTOR`. Instantiates R14.
 - KTD5. Leftover after `outdated` reuses the first-cut persist fence (`WHERE cases.status='open'`). Running jobs are not cancelled from displace. Instantiates R7. First-cut leftover: KTD5 in the duty-desk plan.
 - KTD6. Once a case id is selected, including the first auto-select of an `open` row, keep it until the operator clicks another. Never auto-follow a newly opened case. The list window is newest 10 **union** the selected id, so a pinned row that aged off the newest 10 stays on screen. Cap is console-side; `GET /cases` still returns the store. `(session-settled: user-approved — chosen over dropping a selected row from the window: otherwise the cap fights card-does-not-jump)` Instantiates R8, R9, R10.
 - KTD7. Add `trigger_kind` to `CaseListItem`. Dump OpenAPI and orval in the same unit as the list/card consumers. Show the stored kind strings on the list and card. Give `outdated` a chip tone that is not the rejected fallback. Last speeds stays a speed tape. Instantiates R11, R12, R13.
-- KTD8. Live stream is a procedural generator: unique `event_id`s, calm (moving) stretch, then one of the three opening sequences, cycling kinds. Inter-incident calm is longer than grace so a miss can displace. `MIXED_TAPE` stays the canned fixture; `make sim` stays one-shot over that fixture. `make demo` starts the live loop in the background until `make stop`. `(session-settled: user-approved — chosen over looping MIXED_TAPE as the documented demo: live shift vs regression fixture)` Instantiates R1, R2.
+- KTD8. Live stream is a procedural generator: unique `event_id`s, calm (moving) stretch, then one of the three opening sequences, cycling kinds. Calm is for a readable shift and so a crash-zero tail can re-open, not to wait out a hold. `MIXED_TAPE` stays the canned fixture; `make sim` stays one-shot over that fixture. `make demo` starts the live loop in the background until `make stop`. `(session-settled: user-approved — chosen over looping MIXED_TAPE as the documented demo: live shift vs regression fixture)` Instantiates R1, R2.
 
 ### High-Level Technical Design
 
@@ -219,9 +219,9 @@ sequenceDiagram
 
   Sim->>API: POST /events
   API->>DB: persist event
-  alt open exists and inside grace
+  alt open exists and rule does not match
     API-->>Sim: 201 case_id null
-  else open exists, grace elapsed, rule matches
+  else open exists and rule matches
     API->>DB: lock open row
     API->>DB: status outdated, system audit, cancel pending
     API->>DB: insert new open plus job
@@ -241,7 +241,7 @@ stateDiagram-v2
   [*] --> open: rule opens
   open --> approved: operator Send
   open --> rejected: operator Dismiss
-  open --> outdated: grace elapsed and next rule would open
+  open --> outdated: next rule would open
   approved --> [*]
   rejected --> [*]
   outdated --> [*]
@@ -273,15 +273,14 @@ flowchart LR
 
 - First-cut test `test_speeding_while_crash_case_is_open_does_not_double_open` encodes always-refuse. Split it in U1 or U1 CI stays red against R5.
 - Unpinned `nextSelectedId` auto-follows the first `open`. Without KTD6, AE3 fails on the typical auto-selected card.
-- Concurrent matching posts after grace can hit the unique index if displace and insert are not locked as one occupancy step. Mitigation: row lock plus the existing ingest savepoint.
+- Concurrent matching posts can hit the unique index if displace and insert are not locked as one occupancy step. Mitigation: row lock plus the existing ingest savepoint.
 - A crash-zero tail does not re-open `crash_drop`. The live generator must insert calm moving samples before the next opening sequence, or the desk stalls on one open until Send/Dismiss.
 - Horizon still says “messy few minutes” until U5. Do not ship U5 before the live demo path exists.
 
 ### Assumptions
 
 - Kind labels on the console are the stored strings (`crash_drop`, `speeding`, `jam`), not new copy.
-- Grace tests move `cases.created_at` (or equivalent) rather than sleeping 20s.
-- Decide after grace while the case is still `open` remains ordinary HITL. No extra AE required.
+- Decide while the case is still `open` remains ordinary HITL. No extra AE required.
 - No new Python or JS packages.
 
 ### Implementation constraints
@@ -311,6 +310,21 @@ U1 occupancy → U2 kind/chip/orval → U3 sticky window → U4 live generator �
 
 ---
 
+## Amendments
+
+Overlay on this cut. Do not rewrite shipped unit sections to match. Living Product Contract and KTDs above already reflect the current rule.
+
+### 2026-09-21 Instant displace (no grace)
+
+- **Status:** applied in code. Not a new unit and not an ADR.
+- **Session:** CTO directed — instant displace chosen over a 20s hold so a new matching incident can open immediately. Occupancy stays one `open` per segment; a miss is still `outdated`.
+- **Supersedes (U1 as shipped):** grace hold, `OPEN_GRACE`, in-grace matching that stores the event and keeps the first `open`. Original KTD1 (~20s from `cases.created_at`), original R4/AE1, and “calm longer than grace” in KTD8.
+- **Does not supersede:** one-open uniqueness, `outdated` vs `rejected`, leftover persist fence, sticky card, no new ADR / do not edit ADR 0002.
+- **Living contract:** R4, R5, AE1, AE2, F1, F2, KTD1, KTD2, KTD8, A1 as written in Product Contract and Planning Contract above.
+- **U4:** calm stretches remain for a readable shift and so a crash-zero tail can re-open, not to wait out a hold.
+
+---
+
 ## Implementation Units
 
 GitHub issues are an index. Status stays in this file. Cut name: **live-shift**. Plan-local ids are `U1`–`U5`. Commits use `live-shift-U1` … `live-shift-U5`. Do not reuse MVP `U1`–`U7` or first-cut `V1-U1`–`V1-U7`.
@@ -327,6 +341,8 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
 
 ### U1. Grace occupancy and outdated
 
+- **Status:** done
+- **Occupancy:** superseded by [Amendment 2026-09-21](#2026-09-21-instant-displace-no-grace). This section is the shipped unit. Do not implement its grace hold.
 - **Goal:** After grace, a matching rule displaces the current `open` to `outdated` and opens the next case. Inside grace the slot holds.
 - **Requirements:** R3, R4, R5, R6, R7, R14. F1, F2. AE1, AE2, AE4. KTD1, KTD2, KTD3, KTD4, KTD5.
 - **Dependencies:** none (first-cut occupancy and leftover already on main)
@@ -425,7 +441,7 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
   - `apps/health/modules.py` if a new test filename appears
 - **Approach:**
   1. Keep `MIXED_TAPE` and `make sim` as one-shot fixture playback.
-  2. Add a procedural loop: unique `event_id`s, calm moving stretch, then one opening sequence, cycling `crash_drop` / `speeding` / `jam`. Calm longer than grace.
+  2. Add a procedural loop: unique `event_id`s, calm moving stretch, then one opening sequence, cycling `crash_drop` / `speeding` / `jam`.
   3. HTTP only. Do not write the database.
   4. Entry for the live loop is what U5 will start; this unit owns the generator and its tests.
 - **Patterns to follow:** Current `run.py` posting shape (`event_id`, `segment`, `speed`, `kind`, `recorded_at`). Tape tests that assert MIXED_TAPE kinds stay green.
@@ -493,7 +509,8 @@ No live LLM in CI. Do not add `release:validate`.
 
 **Per unit**
 
-- U1: in-grace hold; after-grace displace + system audit; leftover persist is a no-op; 409 on decide when not `open`.
+- U1 (shipped): in-grace hold; after-grace displace + system audit; leftover persist is a no-op; 409 on decide when not `open`.
+- Amendment 2026-09-21: matching rule displaces immediately; leftover persist is a no-op; 409 on decide when not `open`.
 - U2: list and card show `trigger_kind`; `outdated` chip is not rejected tone; orval committed.
 - U3: selected card stays on displace; window is newest ~10 union selected.
 - U4: generator is not MIXED_TAPE-on-repeat; canned tape tests still pass.

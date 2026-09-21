@@ -86,25 +86,8 @@ def test_second_decision_is_409(client) -> None:
     assert second.status_code == 409
 
 
-def test_approve_after_grace_while_still_open_is_hitl(client, db_session) -> None:
-    """Grace elapsed but nothing displaced yet: Send is still ordinary HITL."""
-    case_id = _open_case(client)
-    case = db_session.get(Case, case_id)
-    assert case is not None
-    case.created_at = datetime.now(UTC) - timedelta(seconds=21)
-    db_session.commit()
-
-    response = client.post(f"/cases/{case_id}/approve")
-    assert response.status_code == 200
-    assert response.json()["status"] == "approved"
-
-
 def test_decide_on_outdated_is_409(client, db_session) -> None:
     case_id = _open_case(client)
-    case = db_session.get(Case, case_id)
-    assert case is not None
-    case.created_at = datetime.now(UTC) - timedelta(seconds=21)
-    db_session.commit()
 
     displaced = client.post(
         "/events",

@@ -195,11 +195,6 @@ def test_claim_then_displace_then_persist_leaves_opinions_null(
     db_session.commit()
     assert claimed is not None
 
-    case = db_session.get(Case, case_id)
-    assert case is not None
-    case.created_at = datetime.now(UTC) - timedelta(seconds=21)
-    db_session.commit()
-
     opened = client.post(
         "/events",
         json={
