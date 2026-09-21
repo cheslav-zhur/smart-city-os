@@ -186,6 +186,57 @@ def test_claim_then_approve_then_persist_leaves_opinions_null(
     assert case.drone_status == "on_site"
 
 
+def test_claim_then_displace_then_persist_leaves_opinions_null(
+    client, db_session
+) -> None:
+    case_id = _open_collapse(client)
+
+    claimed = claim_job(db_session)
+    db_session.commit()
+    assert claimed is not None
+
+    case = db_session.get(Case, case_id)
+    assert case is not None
+    case.created_at = datetime.now(UTC) - timedelta(seconds=21)
+    db_session.commit()
+
+    opened = client.post(
+        "/events",
+        json={
+            "event_id": "job-spd",
+            "segment": "A",
+            "speed": 90.0,
+            "kind": "speeding",
+            "recorded_at": (
+                datetime(2026, 9, 11, 5, 0, tzinfo=UTC) + timedelta(seconds=20)
+            ).isoformat(),
+        },
+    )
+    assert opened.status_code == 201
+    assert opened.json()["case_id"] is not None
+
+    leftover = persist_job_result(
+        db_session,
+        job_id=claimed.job_id,
+        lease_version=claimed.lease_version,
+        dispatcher_opinion="too late",
+        critic_opinion="also late",
+    )
+    db_session.commit()
+    assert leftover == PERSIST_CANCELLED
+
+    db_session.expire_all()
+    job = db_session.get(Job, claimed.job_id)
+    case = db_session.get(Case, case_id)
+    assert job is not None
+    assert job.status == JOB_CANCELLED
+    assert case is not None
+    assert case.dispatcher_opinion is None
+    assert case.critic_opinion is None
+    assert case.status == "outdated"
+    assert case.drone_status == "idle"
+
+
 def test_approve_cancels_pending_job_only(client, db_session) -> None:
     case_id = _open_collapse(client)
     job = db_session.scalar(select(Job))

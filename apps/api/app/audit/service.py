@@ -6,8 +6,11 @@ from app.settings import get_settings
 
 ACTION_APPROVE = "approve"
 ACTION_REJECT = "reject"
+ACTION_OUTDATED = "outdated"
+ACTOR_SYSTEM = "system"
 WHY_APPROVE = "approved send drone"
 WHY_REJECT = "rejected send drone"
+WHY_OUTDATED = "displaced by a newer incident"
 
 
 def list_audit_for_case(session: Session, case_id: int) -> list[AuditEntry]:

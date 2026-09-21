@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 
-from app.models import Case, Event
+from app.models import JOB_CANCELLED, JOB_PENDING, AuditEntry, Case, Event, Job
 
 
 def _event(
@@ -91,9 +91,17 @@ def test_short_jam_tape_does_not_open(client, db_session) -> None:
     assert db_session.scalar(select(func.count()).select_from(Case)) == 0
 
 
-def test_speeding_while_crash_case_is_open_does_not_double_open(
-    client, db_session
-) -> None:
+def _age_past_grace(db_session, case_id: int) -> None:
+    """Move created_at behind the ~20s grace window. Do not sleep."""
+    case = db_session.get(Case, case_id)
+    assert case is not None
+    case.created_at = datetime.now(UTC) - timedelta(seconds=21)
+    db_session.commit()
+    db_session.expire_all()
+
+
+def test_in_grace_matching_kind_holds_the_open_slot(client, db_session) -> None:
+    """AE1: inside grace a later kind is stored and does not open a second case."""
     client.post("/events", json=_event("mix-1", 40.0, kind="crash_drop"))
     crashed = client.post(
         "/events", json=_event("mix-2", 0.0, seconds=5, kind="crash_drop")
@@ -110,9 +118,115 @@ def test_speeding_while_crash_case_is_open_does_not_double_open(
     stored = db_session.scalar(select(Event).where(Event.event_id == "mix-3"))
     assert stored is not None
     assert stored.kind == "speeding"
-    case = db_session.scalar(select(Case))
+    case = db_session.get(Case, crashed.json()["case_id"])
     assert case is not None
+    assert case.status == "open"
     assert case.trigger_kind == "crash_drop"
+
+
+def test_after_grace_matching_jam_displaces_open_to_outdated(
+    client, db_session
+) -> None:
+    """AE2: after grace a matching jam opens case 2 and marks case 1 outdated."""
+    client.post("/events", json=_event("age-1", 40.0, kind="crash_drop"))
+    crashed = client.post(
+        "/events", json=_event("age-2", 0.0, seconds=5, kind="crash_drop")
+    )
+    case_id = crashed.json()["case_id"]
+    assert case_id is not None
+    _age_past_grace(db_session, case_id)
+
+    fillers = [40.0, 38.0, 30.0, 4.0, 3.0]
+    for index, speed in enumerate(fillers):
+        held = client.post(
+            "/events",
+            json=_event(f"age-jam-{index}", speed, seconds=20 + index, kind="crash_drop"),
+        )
+        assert held.json()["case_id"] is None
+
+    opened = client.post(
+        "/events", json=_event("age-jam-last", 2.0, seconds=30, kind="jam")
+    )
+    assert opened.status_code == 201
+    new_id = opened.json()["case_id"]
+    assert new_id is not None
+    assert new_id != case_id
+
+    db_session.expire_all()
+    old = db_session.get(Case, case_id)
+    new = db_session.get(Case, new_id)
+    assert old is not None
+    assert old.status == "outdated"
+    assert old.drone_status == "idle"
+    assert new is not None
+    assert new.status == "open"
+    assert new.trigger_kind == "jam"
+    old_job = db_session.scalar(select(Job).where(Job.case_id == case_id))
+    new_job = db_session.scalar(select(Job).where(Job.case_id == new_id))
+    assert old_job is not None
+    assert old_job.status == JOB_CANCELLED
+    assert new_job is not None
+    assert new_job.status == JOB_PENDING
+    assert db_session.scalar(
+        select(func.count()).select_from(Case).where(Case.status == "open")
+    ) == 1
+
+    audit = list(
+        db_session.scalars(
+            select(AuditEntry).where(AuditEntry.case_id == case_id)
+        ).all()
+    )
+    assert len(audit) == 1
+    assert audit[0].actor == "system"
+    assert audit[0].action == "outdated"
+
+
+def test_dismiss_inside_grace_is_rejected_not_outdated(client, db_session) -> None:
+    """AE4: operator dismiss beats displace; a later kind may open a new case."""
+    client.post("/events", json=_event("d1", 40.0, kind="crash_drop"))
+    crashed = client.post(
+        "/events", json=_event("d2", 0.0, seconds=5, kind="crash_drop")
+    )
+    case_id = crashed.json()["case_id"]
+    assert case_id is not None
+
+    dismissed = client.post(f"/cases/{case_id}/reject")
+    assert dismissed.status_code == 200
+
+    later = client.post("/events", json=_event("d3", 90.0, seconds=10, kind="speeding"))
+    assert later.status_code == 201
+    new_id = later.json()["case_id"]
+    assert new_id is not None
+    assert new_id != case_id
+
+    db_session.expire_all()
+    first = db_session.get(Case, case_id)
+    assert first is not None
+    assert first.status == "rejected"
+    assert first.status != "outdated"
+
+
+def test_two_matching_posts_after_grace_keep_one_open(client, db_session) -> None:
+    client.post("/events", json=_event("race-1", 40.0, kind="crash_drop"))
+    crashed = client.post(
+        "/events", json=_event("race-2", 0.0, seconds=5, kind="crash_drop")
+    )
+    case_id = crashed.json()["case_id"]
+    assert case_id is not None
+    _age_past_grace(db_session, case_id)
+
+    first = client.post("/events", json=_event("race-3", 90.0, seconds=20, kind="speeding"))
+    second = client.post(
+        "/events", json=_event("race-4", 95.0, seconds=21, kind="speeding")
+    )
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert first.json()["case_id"] is not None
+    assert second.json()["case_id"] is None
+    assert db_session.scalar(select(func.count()).select_from(Event)) == 4
+    assert db_session.scalar(
+        select(func.count()).select_from(Case).where(Case.status == "open")
+    ) == 1
 
 
 def test_unknown_kind_is_422(client, db_session) -> None:

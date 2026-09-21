@@ -1,12 +1,18 @@
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.audit.service import (
     ACTION_APPROVE,
+    ACTION_OUTDATED,
     ACTION_REJECT,
+    ACTOR_SYSTEM,
     WHY_APPROVE,
+    WHY_OUTDATED,
     WHY_REJECT,
     write_audit,
+    write_audit_entry,
 )
 from app.drone.service import DRONE_IDLE, dispatch_after_approve
 from app.models import Case, Event
@@ -25,6 +31,9 @@ JAM_PRIOR_WINDOW = 3
 CASE_OPEN = "open"
 CASE_APPROVED = "approved"
 CASE_REJECTED = "rejected"
+CASE_OUTDATED = "outdated"
+# Same class as COLLAPSE_MAX: named module constant, not a Settings knob.
+OPEN_GRACE = timedelta(seconds=20)
 
 
 class CaseNotFoundError(LookupError):
@@ -32,7 +41,7 @@ class CaseNotFoundError(LookupError):
 
 
 class CaseAlreadyDecidedError(ValueError):
-    """SQL CAS found zero open rows — already approved or rejected."""
+    """SQL CAS found zero open rows — already approved, rejected, or outdated."""
 
 
 def maybe_open_case(session: Session, segment: str, kind: str) -> Case | None:
@@ -40,16 +49,24 @@ def maybe_open_case(session: Session, segment: str, kind: str) -> Case | None:
 
     The window is the shared speed tape on the segment, newest first. Kind
     selects the rule; it does not filter out samples of another kind.
+
+    An in-grace open holds the slot. After grace, a matching rule displaces
+    that row to outdated in the same occupancy step, then inserts the new open.
     """
     existing = session.scalar(
-        select(Case).where(Case.segment == segment, Case.status == CASE_OPEN)
+        select(Case)
+        .where(Case.segment == segment, Case.status == CASE_OPEN)
+        .with_for_update()
     )
-    if existing is not None:
+    if existing is not None and not _open_grace_elapsed(existing):
         return None
 
     samples = _recent_samples(session, segment, limit=JAM_SLOW_WINDOW + JAM_PRIOR_WINDOW)
     if not _rule_matches(kind, samples):
         return None
+
+    if existing is not None:
+        _displace_open_case(session, existing)
 
     case = Case(
         segment=segment,
@@ -60,6 +77,28 @@ def maybe_open_case(session: Session, segment: str, kind: str) -> Case | None:
     session.add(case)
     session.flush()
     return case
+
+
+def _open_grace_elapsed(case: Case) -> bool:
+    created = case.created_at
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=UTC)
+    return datetime.now(UTC) - created >= OPEN_GRACE
+
+
+def _displace_open_case(session: Session, case: Case) -> None:
+    """Mark the locked open row outdated, audit, cancel pending. Drone stays idle."""
+    case.status = CASE_OUTDATED
+    case.drone_status = DRONE_IDLE
+    session.flush()
+    write_audit_entry(
+        session,
+        case_id=case.id,
+        actor=ACTOR_SYSTEM,
+        action=ACTION_OUTDATED,
+        why=WHY_OUTDATED,
+    )
+    _cancel_pending_jobs(session, case.id)
 
 
 def _recent_samples(session: Session, segment: str, limit: int) -> list[Event]:
