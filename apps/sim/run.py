@@ -1,4 +1,4 @@
-"""Post the canned speed tape to the API. Does not write to the database itself."""
+"""Post the mixed kind tape to the API. Does not write to the database itself."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from tape import TAPE
+from tape import MIXED_TAPE
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
 
@@ -39,23 +39,24 @@ def run(api_url: str) -> None:
     started = datetime.now(timezone.utc)
     last_offset = 0
     case_id = None
-    for index, (offset_seconds, speed) in enumerate(TAPE):
+    for index, (offset_seconds, speed, kind) in enumerate(MIXED_TAPE):
         wait = offset_seconds - last_offset
         if wait > 0:
             time.sleep(wait)
         last_offset = offset_seconds
-        # V1-U7 must send kind on every POST. Until then the API defaults omitted kind to crash_drop.
         payload = {
             "event_id": f"sim-{run_id}-{index:03d}",
             "segment": "A",
             "speed": speed,
+            "kind": kind,
             "recorded_at": (started + timedelta(seconds=offset_seconds)).isoformat(),
         }
         result = post_event(api_url, payload)
         if result.get("case_id") is not None:
             case_id = result["case_id"]
         print(
-            f"{payload['event_id']} speed={speed} case_id={result.get('case_id')}",
+            f"{payload['event_id']} kind={kind} speed={speed} "
+            f"case_id={result.get('case_id')}",
             flush=True,
         )
     if case_id is None:
