@@ -274,7 +274,7 @@ GitHub issues are an index. Status stays in this file. Unit ids for this cut are
 | V1-U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) | done |
 | V1-U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) | done |
 | V1-U6 | [#7](https://github.com/happylolonly/smart-city-os/issues/7) | done |
-| V1-U7 | not opened — say so before writing this unit; do not open unasked | |
+| V1-U7 | [#8](https://github.com/happylolonly/smart-city-os/issues/8) | done |
 
 Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit commits end with `Closes #n`. Mark **Status** here in the same step as the unit commit. Push to `main` only when the CTO asks; that push closes the issue.
 
@@ -448,9 +448,10 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - Integration: card test — approve/reject still fire the generated mutations.
 - **Verification:** `make test-api` and `pnpm test` in `apps/web`. Manual: after sim, card shows slots and buttons.
 
-### V1-U7. Simulator kinds, worker run path, ADR
+### V1-U7. Simulator kinds, worker run path
 
-- **Goal:** Documented demo path runs api, worker, web, postgres, and a mixed tape. Lock the first-cut choices in an ADR.
+- **Status:** done
+- **Goal:** Documented demo path runs api, worker, web, postgres, and a mixed tape.
 - **Requirements:** R6, R14
 - **Dependencies:** V1-U2, V1-U3
 - **Files:**
@@ -461,12 +462,13 @@ Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit c
   - `Makefile`
   - `README.md`
   - `.env.example`
-  - `docs/adr/0008-v1-first-cut.md`
-  - `docs/adr/README.md`
+  - `docs/scope/02-v1.md`
+  - `scripts/run-demo.sh`
+  - `scripts/stop-demo.sh`
 - **Approach:**
   1. Tape covers crash_drop (existing), plus short speeding and jam sequences. HTTP only. Every sim `POST` sends `kind`. Do not rely on the V1-U2 omit-default (`crash_drop` when the field is absent). Collapse posts `crash_drop`; speeding and jam post their own kind. After that, the documented demo path no longer needs the default.
-  2. Compose `worker` service. `make worker`. README: migrate, up, worker, sim, open console.
-  3. ADR 0008: two roles, Postgres jobs, playbook files, no GraphInterrupt, no Redis. Point at this plan for units.
+  2. Compose `worker` service. `make worker`. `make demo` starts api/web/worker, waits for `/health`, then posts the tape. README: migrate, up, worker, sim, open console.
+  3. Close first-cut roles in `docs/scope/02-v1.md` (dispatcher then critic; traffic later). No ADR for the queue — Postgres jobs are this cut’s store, not a lock against Redis.
 - **Test scenarios:**
   - Happy: canned tapes include a collapse, a speeding open, and a jam open (predicates, not live HTTP). Covers R14.
   - Test expectation: none for Compose itself — documented run path, same as MVP U7.
@@ -502,7 +504,7 @@ No live LLM in CI. Do not add `release:validate`.
 - V1-U4: playbook search tests green.
 - V1-U5: two opinions from stubbed graph; timeout/no-key fallback; allowlist test.
 - V1-U6: card shows two opinions and audit; buttons on `open` only.
-- V1-U7: README run path includes worker; ADR 0008 accepted in `docs/adr/README.md`.
+- V1-U7: README run path includes worker. No new ADR.
 
 ## Appendix
 
