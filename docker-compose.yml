@@ -35,7 +35,7 @@ services:
       npm_config_store_dir: /cache/pnpm
       UV_CACHE_DIR: /cache/uv
 
-  # Demo path only (`docker compose --profile demo up postgres api web`).
+  # Demo path only (`docker compose --profile demo up postgres api worker web`).
   # Daily work stays in `dev` via Makefile — do not run both listeners on 8000/5173.
   api:
     profiles: ["demo"]
@@ -51,6 +51,29 @@ services:
     command: [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://city:city@postgres:5432/city
+      PIP_CACHE_DIR: /cache/pip
+      UV_CACHE_DIR: /cache/uv
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    profiles: ["demo"]
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspace:cached
+      - pip_cache:/cache/pip
+      - pnpm_cache:/cache/pnpm
+      - uv_cache:/cache/uv
+    working_dir: /workspace/apps/api
+    command: [".venv/bin/python", "-m", "app.worker"]
     env_file:
       - path: .env
         required: false

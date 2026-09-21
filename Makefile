@@ -4,7 +4,7 @@
 export DATABASE_URL ?= postgresql://city:city@postgres:5432/city
 export AUDIT_ACTOR ?= demo-operator
 
-.PHONY: migrate api web sim test-api openapi health-report
+.PHONY: migrate api web sim worker demo stop test-api openapi health-report
 
 migrate:
 	cd apps/api && .venv/bin/alembic upgrade head
@@ -17,6 +17,17 @@ web:
 
 sim:
 	python apps/sim/run.py
+
+worker:
+	cd apps/api && .venv/bin/python -m app.worker
+
+# One terminal: migrate, start api/web/worker, wait for /health, post the tape.
+# Desk stays up. Logs: .local/demo/*.log
+demo:
+	bash scripts/run-demo.sh
+
+stop:
+	bash scripts/stop-demo.sh
 
 test-api:
 	cd apps/api && .venv/bin/pytest

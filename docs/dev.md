@@ -29,11 +29,14 @@ apps/api/.venv/bin/pre-commit install
 | API (reload) | `make api` |
 | Console | `make web` |
 | Simulator | `make sim` |
+| Worker (opinions) | `make worker` |
+| Whole desk + tape | `make demo` |
+| Stop `make demo` processes | `make stop` |
 | API tests | `make test-api` |
 | Regen console API client | `make openapi` |
 | Engineering health snapshot | `make health-report` |
 
-Open the console at the forwarded port **5173**. Run `make api` and `make web` in two terminals inside `dev`. Do not also start the Compose `api`/`web` services on the same ports.
+Open the console at the forwarded port **5173**. Daily: `make api`, `make web`, and `make worker` in three terminals, then `make sim`. Or one terminal: **`make demo`** (migrate → start the three → wait → tape). `make stop` kills those three. Do not also start the Compose `api`/`web`/`worker` services on the same ports. The worker can run with no `LLM_API_KEY` (empty opinions, approve/reject still work).
 
 `make health-report` writes a **snapshot** under `.local/health/` (gitignored). Spec: [`engineering-health.md`](engineering-health.md). Open `index.html` in a browser. Not live desk state, not an operator screen.
 
@@ -41,20 +44,21 @@ API and sim tests also run on `git push` via [pre-commit](https://pre-commit.com
 
 ## Demo path (Compose profile)
 
-After first-time setup (venv + `pnpm install` + migrate), from the repo root:
+After first-time setup (venv + `pnpm install`), from the repo root inside `dev`:
 
 ```bash
-docker compose --profile demo up postgres api web
+make demo
 ```
 
-In another shell (host or `dev`):
+That migrates, starts api / web / worker, waits for `/health`, then posts the mixed tape. Console: http://localhost:5173. Stop the three with `make stop`.
+
+Compose profile (host, not together with `make api` / `make web` on the same ports):
 
 ```bash
+docker compose --profile demo up postgres api worker web
 make sim
 ```
 
-Open http://localhost:5173 → case card → approve or reject → check an `audit_entries` row (e.g. via `psql` or the API).
+Open http://localhost:5173 → case card (two opinion slots + audit) → approve or reject → an operator row appears in audit on the card.
 
-`api` / `web` reuse the same image as `dev` (no second Python toolchain). They are for the demo path only; daily work stays in `dev` + Makefile.
-
-Opinions from the model need a separate **worker** process (`python -m app.worker`). Compose `worker` and `make worker` land in plan unit **V1-U7**; until then run the worker by hand from `apps/api` if you want filled opinions.
+`api` / `web` / `worker` reuse the same image as `dev` (no second Python toolchain). They are for the demo path only; daily work stays in `dev` + Makefile. The worker claims jobs from Postgres; ingest never waits on the model.

@@ -17,7 +17,7 @@ Traffic samples arrive on one segment (crash-drop, speeding, jam). A code rule m
 
 ## Demo
 
-How to run locally (setup + compose demo path): [`docs/dev.md`](docs/dev.md).
+Setup, then **`make demo`** (migrate → api + worker + web → sim tape). Details: [`docs/dev.md`](docs/dev.md).
 
 ## What this demonstrates
 
