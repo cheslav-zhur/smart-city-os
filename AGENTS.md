@@ -18,6 +18,10 @@ Read [`docs/adr/`](docs/adr/README.md) before reversing a locked choice.
 
 Not a chat product. Not a toy map city.
 
+`.compound-engineering/artifacts/solutions/` — documented solutions to past problems (bugs, best practices, workflow patterns), organized by category with YAML frontmatter (`module`, `tags`, `problem_type`). Relevant when implementing or debugging in documented areas.
+
+`CONCEPTS.md` — shared domain vocabulary (entities, named processes, status concepts). Relevant when orienting to the codebase or discussing domain concepts.
+
 ## Hard rules
 
 - The model must not fly a drone or close a road. Tools are an allowlist. Flight is application code after human confirm.
