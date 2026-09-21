@@ -130,6 +130,7 @@ Compose up. Worker running. Sim posts a mixed tape. Console shows list, card, tw
 - LangGraph Postgres checkpointer / mid-graph resume.
 - pgvector.
 - False-alarm vs real multi-minute sim polish beyond the three kind tapes.
+- Backend DDD refactor: explicit domain modules under `apps/api` (aggregates / application services in the same process). Not extra sensor/product domains, not microservices. Console already has a later-DDD note in `apps/web/README.md`. CTO-named cut; do not start inside V1-U1–V1-U7.
 
 **Outside this product's identity**
 
@@ -272,7 +273,7 @@ GitHub issues are an index. Status stays in this file. Unit ids for this cut are
 | V1-U3 | [#4](https://github.com/happylolonly/smart-city-os/issues/4) | done |
 | V1-U4 | [#5](https://github.com/happylolonly/smart-city-os/issues/5) | done |
 | V1-U5 | [#6](https://github.com/happylolonly/smart-city-os/issues/6) | done |
-| V1-U6 | not opened — say so before writing this unit; do not open unasked | |
+| V1-U6 | [#7](https://github.com/happylolonly/smart-city-os/issues/7) | |
 | V1-U7 | not opened — say so before writing this unit; do not open unasked | |
 
 Parent cut: [#1](https://github.com/happylolonly/smart-city-os/issues/1). Unit commits end with `Closes #n`. Mark **Status** here in the same step as the unit commit. Push to `main` only when the CTO asks; that push closes the issue.
