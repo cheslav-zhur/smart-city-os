@@ -17,7 +17,7 @@ Traffic samples arrive on one segment (crash-drop, speeding, jam). A code rule m
 
 ## Demo
 
-Setup, then **`make demo`** (migrate → api + worker + web → sim tape). Details: [`docs/dev.md`](docs/dev.md).
+Setup, then **`make demo`** (migrate → api + worker + web → live sim until **`make stop`**). Details: [`docs/dev.md`](docs/dev.md).
 
 ## What this demonstrates
 
@@ -59,7 +59,7 @@ Same loop, three depths. Details in [`docs/scope/`](docs/scope/README.md).
 
 ## Status
 
-MVP (U1–U7) done. Current cut: **v1 duty desk** (V1-U1–V1-U7). Progress: [plan](.compound-engineering/artifacts/plans/2026-09-16-001-feat-v1-duty-desk-cut-plan.md). Issues: [cheslav-zhur/smart-city-os](https://github.com/cheslav-zhur/smart-city-os/issues) (pointers; contract stays in `docs/`).
+MVP (U1–U7) done. First v1 duty desk (V1-U1–V1-U7) done. Current cut: **live shift desk**. Progress: [plan](.compound-engineering/artifacts/plans/2026-09-21-001-feat-live-shift-desk-plan.md). Issues: [cheslav-zhur/smart-city-os](https://github.com/cheslav-zhur/smart-city-os/issues) (pointers; contract stays in `docs/`).
 
 ## Not in this cut
 

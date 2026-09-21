@@ -337,7 +337,7 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
 | U2 | [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9) | done |
 | U3 | — | done |
 | U4 | — | done |
-| U5 | not opened — say so before writing this unit; do not open unasked | |
+| U5 | — | done |
 
 ### U1. Grace occupancy and outdated
 
@@ -454,6 +454,7 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
 
 ### U5. Live demo path and horizon copy
 
+- **Status:** done
 - **Goal:** Documented `make demo` runs a live shift until `make stop`. Horizon text matches `outdated` and the endless stream.
 - **Requirements:** R1. Horizon share in How This Work Fits Together. KTD8, KTD3.
 - **Dependencies:** U4

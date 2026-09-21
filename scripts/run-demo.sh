@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start api + web + worker, wait until the API answers, then post the sim tape.
+# Start api + web + worker, wait until the API answers, then start the live sim.
 # Processes stay up (logs + pids under .local/demo/). Stop with: make stop
 set -euo pipefail
 
@@ -105,9 +105,11 @@ if ! wait_http "http://127.0.0.1:5173" 90; then
   exit 1
 fi
 
-echo "sim tape"
-python "$root/apps/sim/run.py"
+echo "sim live (until make stop)"
+start_bg "$root" sim \
+  python "$root/apps/sim/run.py" --live
 
 echo
 echo "Desk is up. Console: http://localhost:5173"
+echo "Live sim posts unique incidents until make stop."
 echo "Logs: $dir/*.log   Stop: make stop"

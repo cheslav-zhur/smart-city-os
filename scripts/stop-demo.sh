@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop api / web / worker started by scripts/run-demo.sh (make demo).
+# Stop api / web / worker / sim started by scripts/run-demo.sh (make demo).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -23,6 +23,7 @@ stop_one() {
   rm -f "$pidfile"
 }
 
+stop_one sim
 stop_one api
 stop_one web
 stop_one worker

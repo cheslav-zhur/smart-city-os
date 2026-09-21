@@ -28,15 +28,15 @@ apps/api/.venv/bin/pre-commit install
 | Migrate | `make migrate` |
 | API (reload) | `make api` |
 | Console | `make web` |
-| Simulator | `make sim` |
+| Simulator (canned tape once) | `make sim` |
 | Worker (opinions) | `make worker` |
-| Whole desk + tape | `make demo` |
+| Whole desk + live stream | `make demo` |
 | Stop `make demo` processes | `make stop` |
 | API tests | `make test-api` |
 | Regen console API client | `make openapi` |
 | Engineering health snapshot | `make health-report` |
 
-Open the console at the forwarded port **5173**. Daily: `make api`, `make web`, and `make worker` in three terminals, then `make sim`. Or one terminal: **`make demo`** (migrate → start the three → wait → tape). `make stop` kills those three. Do not also start the Compose `api`/`web`/`worker` services on the same ports. The worker can run with no `LLM_API_KEY` (empty opinions, approve/reject still work).
+Open the console at the forwarded port **5173**. Daily: `make api`, `make web`, and `make worker` in three terminals, then `python apps/sim/run.py --live` for a shift (or `make sim` for the canned tape once). Or one terminal: **`make demo`** (migrate → start the three → wait → live sim). `make stop` kills api, web, worker, and the live sim. Do not also start the Compose `api`/`web`/`worker` services on the same ports. The worker can run with no `LLM_API_KEY` (empty opinions, approve/reject still work).
 
 `make health-report` writes a **snapshot** under `.local/health/` (gitignored). Spec: [`engineering-health.md`](engineering-health.md). Open `index.html` in a browser. Not live desk state, not an operator screen.
 
@@ -50,7 +50,7 @@ After first-time setup (venv + `pnpm install`), from the repo root inside `dev`:
 make demo
 ```
 
-That migrates, starts api / web / worker, waits for `/health`, then posts the mixed tape. Console: http://localhost:5173. Stop the three with `make stop`.
+That migrates, starts api / web / worker, waits for `/health`, then starts the live sim in the background. Console: http://localhost:5173. Unique incidents keep arriving until **`make stop`**, which kills the sim as well as the three services. `make sim` stays the one-shot mixed tape.
 
 Compose profile (host, not together with `make api` / `make web` on the same ports):
 
@@ -58,6 +58,8 @@ Compose profile (host, not together with `make api` / `make web` on the same por
 docker compose --profile demo up postgres api worker web
 make sim
 ```
+
+`make sim` here is still the canned tape fixture, not the live loop. For a live shift use **`make demo`** (or `python apps/sim/run.py --live` against an already running API).
 
 Open http://localhost:5173 → case card (two opinion slots + audit) → approve or reject → an operator row appears in audit on the card.
 
