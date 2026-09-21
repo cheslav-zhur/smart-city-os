@@ -56,7 +56,7 @@ Proposal ≠ execute. Model/tool calls land in audit as data.
 |-------|--------|
 | Local | Dev Container + Docker Compose (`postgres`, `dev`; demo profile for `api`/`web`) |
 | Simulator | stdlib script (`make sim`) — not IoT |
-| API tests | pytest (+ httpx); CI on `main` / PRs |
+| API tests | pytest (+ httpx) against Postgres `city_test` ([ADR 0008](adr/0008-api-tests-use-city-test.md)); CI on `main` / PRs |
 | Console tests | vitest locally; not in CI until the console thickens |
 | Pre-commit | hooks; pre-push runs API/sim gate when Postgres is up |
 
