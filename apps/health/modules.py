@@ -18,6 +18,7 @@ MODULE_FILES: dict[str, tuple[str, tuple[str, ...]]] = {
     "web.cases": ("web", ("CaseCard.test.tsx",)),
     "web.shared": ("web", ("time.test.ts",)),
     "sim.tape": ("sim", ("test_tape.py",)),
+    "sim.stream": ("sim", ("test_stream.py",)),
 }
 
 FILE_TO_MODULE = {

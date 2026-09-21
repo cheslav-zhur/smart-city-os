@@ -336,7 +336,7 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
 | U1 | [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9) | done |
 | U2 | [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9) | done |
 | U3 | — | done |
-| U4 | not opened — say so before writing this unit; do not open unasked | |
+| U4 | — | done |
 | U5 | not opened — say so before writing this unit; do not open unasked | |
 
 ### U1. Grace occupancy and outdated
@@ -429,6 +429,7 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
 
 ### U4. Endless unique incident stream
 
+- **Status:** done
 - **Goal:** The simulator can emit unique incidents until stopped. MIXED_TAPE remains a fixture, not the live loop.
 - **Requirements:** R1, R2. AE5. KTD8.
 - **Dependencies:** U1 for HTTP displace to be visible; generator predicates can land without U1

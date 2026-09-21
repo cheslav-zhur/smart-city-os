@@ -1,20 +1,23 @@
-"""Post the mixed kind tape to the API. Does not write to the database itself."""
+"""Post traffic samples to the API. Does not write to the database itself."""
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from tape import MIXED_TAPE
+from stream import event_id, iter_live_samples
+from tape import MIXED_TAPE, Sample
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
 
@@ -34,18 +37,19 @@ def post_event(api_url: str, payload: dict) -> dict:
         raise SystemExit(f"POST /events failed: {exc.code} {body}") from exc
 
 
-def run(api_url: str) -> None:
+def post_samples(api_url: str, samples: Iterable[Sample]) -> int | None:
+    """Post samples in order. Returns the last opened case id, if any."""
     run_id = uuid4().hex[:8]
     started = datetime.now(timezone.utc)
     last_offset = 0
     case_id = None
-    for index, (offset_seconds, speed, kind) in enumerate(MIXED_TAPE):
+    for index, (offset_seconds, speed, kind) in enumerate(samples):
         wait = offset_seconds - last_offset
         if wait > 0:
             time.sleep(wait)
         last_offset = offset_seconds
         payload = {
-            "event_id": f"sim-{run_id}-{index:03d}",
+            "event_id": event_id(run_id, index),
             "segment": "A",
             "speed": speed,
             "kind": kind,
@@ -59,14 +63,42 @@ def run(api_url: str) -> None:
             f"case_id={result.get('case_id')}",
             flush=True,
         )
+    return case_id
+
+
+def run_tape(api_url: str) -> None:
+    case_id = post_samples(api_url, MIXED_TAPE)
     if case_id is None:
         raise SystemExit("tape finished but the API did not open a case")
     print(f"opened case {case_id}", flush=True)
 
 
+def run_live(api_url: str) -> None:
+    try:
+        post_samples(api_url, iter_live_samples())
+    except KeyboardInterrupt:
+        print("live stream stopped", flush=True)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Post traffic samples to the city API."
+    )
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Post unique incidents until stopped. Default is the canned mixed tape once.",
+    )
+    return parser.parse_args(argv)
+
+
 def main() -> None:
+    args = parse_args()
     api_url = os.environ.get("CITY_API_URL", DEFAULT_API_URL)
-    run(api_url)
+    if args.live:
+        run_live(api_url)
+    else:
+        run_tape(api_url)
 
 
 if __name__ == "__main__":
