@@ -2,7 +2,7 @@
 
 What is in the repo today. **Why** a choice landed → [`adr/`](adr/README.md) (do not duplicate decisions here). How to run → [`dev.md`](dev.md).
 
-Layout: `apps/api` · `apps/web` · `apps/sim` — one repo, modular monolith.
+Layout: `apps/api` · `apps/web` · `apps/sim` · `apps/health` (engineering snapshot, not the desk).
 
 ## API / worker
 
@@ -59,6 +59,7 @@ Proposal ≠ execute. Model/tool calls land in audit as data.
 | API tests | pytest (+ httpx) against Postgres `city_test` ([ADR 0008](adr/0008-api-tests-use-city-test.md)); CI on `main` / PRs |
 | Console tests | vitest locally; not in CI until the console thickens |
 | Pre-commit | hooks; pre-push runs API/sim gate when Postgres is up |
+| Engineering health | [`engineering-health.md`](engineering-health.md) — `apps/health` snapshot; not the duty console |
 
 ## Explicitly not here
 

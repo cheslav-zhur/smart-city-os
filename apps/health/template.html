@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Engineering health</title>
+<style>
+  :root {
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --bg: #f8fafc;
+    --card: #fff;
+    --ok: #0f766e;
+    --ok-bg: #ccfbf1;
+    --bad: #be123c;
+    --bad-bg: #ffe4e6;
+    --miss: #64748b;
+    --miss-bg: #f1f5f9;
+    --err: #b45309;
+    --err-bg: #fef3c7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e2e8f0;
+      --muted: #94a3b8;
+      --line: #1e293b;
+      --bg: #0b1220;
+      --card: #111827;
+      --ok: #5eead4;
+      --ok-bg: #134e4a;
+      --bad: #fda4af;
+      --bad-bg: #4c0519;
+      --miss: #94a3b8;
+      --miss-bg: #1e293b;
+      --err: #fcd34d;
+      --err-bg: #422006;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.45 ui-sans-serif, system-ui, sans-serif;
+  }
+  main { max-width: 52rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+  h1 { font-size: 1.35rem; margin: 0 0 0.35rem; }
+  .meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
+  .banner {
+    display: none;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    background: var(--err-bg);
+    color: var(--err);
+    margin-bottom: 1rem;
+  }
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 640px) { .tiles { grid-template-columns: 1fr; } }
+  .tile, .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+  }
+  .tile .label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tile .count { font-size: 1.45rem; font-weight: 650; margin-top: 0.2rem; }
+  h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 1.4rem 0 0.6rem; }
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .checks li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .checks li:first-child { border-top: 0; }
+  .dot {
+    display: inline-block;
+    min-width: 4.5rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 650;
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+  }
+  .passed { background: var(--ok-bg); color: var(--ok); }
+  .failed { background: var(--bad-bg); color: var(--bad); }
+  .missing { background: var(--miss-bg); color: var(--miss); }
+  .error { background: var(--err-bg); color: var(--err); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 0.45rem 0.35rem; border-top: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 550; font-size: 0.75rem; text-transform: uppercase; }
+  .fail {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8rem;
+    white-space: pre-wrap;
+    margin: 0.75rem 0 0;
+  }
+  .note { color: var(--muted); font-size: 0.85rem; margin-top: 0.75rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Engineering health</h1>
+  <p class="meta" id="meta"></p>
+  <div class="banner" id="stale">Snapshot is older than __STALE_HOURS__h. Re-run <code>make health-report</code>.</div>
+  <div class="tiles" id="tiles"></div>
+  <h2>Checks</h2>
+  <div class="panel"><ul class="checks" id="checks"></ul></div>
+  <h2>Modules</h2>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Module</th><th>Layer</th><th>Tests</th><th>Failed</th><th></th></tr></thead>
+      <tbody id="modules"></tbody>
+    </table>
+    <p class="note" id="unmap"></p>
+  </div>
+  <h2 id="fail-h">Failures</h2>
+  <div class="panel" id="fails"></div>
+</main>
+<script>
+const data = __QUALITY_JSON__;
+function badge(status) {
+  return '<span class="dot ' + status + '">' + status + '</span>';
+}
+const git = data.git || {};
+document.getElementById('meta').textContent =
+  (git.sha || '') + ' · ' + (git.branch || '') +
+  (git.dirty ? ' · dirty' : '') + ' · ' + (data.generated_at || '');
+const generated = Date.parse(data.generated_at);
+if (!Number.isNaN(generated) && (Date.now() - generated) > __STALE_HOURS__ * 3600 * 1000) {
+  document.getElementById('stale').style.display = 'block';
+}
+const suites = data.suites || {};
+const tiles = document.getElementById('tiles');
+for (const [id, row] of Object.entries(suites)) {
+  const el = document.createElement('div');
+  el.className = 'tile';
+  el.innerHTML = '<div class="label">' + id + '</div>' +
+    '<div class="count">' + (row.passed || 0) + ' / ' + (row.total || 0) + '</div>' +
+    badge(row.status || 'error');
+  tiles.appendChild(el);
+}
+const checkLabels = {
+  api_pytest: 'API pytest',
+  sim_pytest: 'sim pytest',
+  web_vitest: 'web vitest',
+  web_tsc: 'web tsc -b',
+  web_in_ci: 'web in CI'
+};
+const checks = document.getElementById('checks');
+for (const [key, status] of Object.entries(data.checks || {})) {
+  const li = document.createElement('li');
+  li.innerHTML = '<span>' + (checkLabels[key] || key) + '</span>' + badge(status);
+  checks.appendChild(li);
+}
+const modules = data.modules || [];
+const tbody = document.getElementById('modules');
+for (const row of modules) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = '<td>' + row.id + '</td><td>' + row.layer + '</td><td>' +
+    row.tests + '</td><td>' + row.failed + '</td><td>' + badge(row.status) + '</td>';
+  tbody.appendChild(tr);
+}
+const suiteTotal = Object.values(suites).reduce((n, s) => n + (s.total || 0), 0);
+const mapped = modules.reduce((n, m) => n + (m.tests || 0), 0);
+if (suiteTotal !== mapped) {
+  document.getElementById('unmap').textContent =
+    'Unmapped tests: ' + (suiteTotal - mapped) +
+    ' (in suite totals, not in a module row).';
+}
+const failures = data.failures || [];
+const failBox = document.getElementById('fails');
+if (!failures.length) {
+  document.getElementById('fail-h').style.display = 'none';
+  failBox.style.display = 'none';
+} else {
+  for (const f of failures) {
+    const pre = document.createElement('pre');
+    pre.className = 'fail';
+    pre.textContent = f.nodeid + '\n' + (f.message || '');
+    failBox.appendChild(pre);
+  }
+}
+</script>
+</body>
+</html>

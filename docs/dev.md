@@ -31,10 +31,13 @@ apps/api/.venv/bin/pre-commit install
 | Simulator | `make sim` |
 | API tests | `make test-api` |
 | Regen console API client | `make openapi` |
+| Engineering health snapshot | `make health-report` |
 
 Open the console at the forwarded port **5173**. Run `make api` and `make web` in two terminals inside `dev`. Do not also start the Compose `api`/`web` services on the same ports.
 
-API and sim tests also run on `git push` via [pre-commit](https://pre-commit.com/) (`pre-push` hook, Postgres required), and on GitHub Actions (`.github/workflows/ci.yml`) for `main` and pull requests. No live LLM in CI.
+`make health-report` writes a **snapshot** under `.local/health/` (gitignored). Spec: [`engineering-health.md`](engineering-health.md). Open `index.html` in a browser. Not live desk state, not an operator screen.
+
+API and sim tests also run on `git push` via [pre-commit](https://pre-commit.com/) (`pre-push` hook, Postgres required), and on GitHub Actions (`.github/workflows/ci.yml`) for `main` and pull requests. No live LLM in CI. Web vitest is not in CI yet; the health page marks that check as **missing**.
 
 ## Demo path (Compose profile)
 

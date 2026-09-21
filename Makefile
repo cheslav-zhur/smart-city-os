@@ -4,7 +4,7 @@
 export DATABASE_URL ?= postgresql://city:city@postgres:5432/city
 export AUDIT_ACTOR ?= demo-operator
 
-.PHONY: migrate api web sim test-api openapi
+.PHONY: migrate api web sim test-api openapi health-report
 
 migrate:
 	cd apps/api && .venv/bin/alembic upgrade head
@@ -24,3 +24,7 @@ test-api:
 openapi:
 	cd apps/api && .venv/bin/python scripts/dump_openapi.py
 	cd apps/web && pnpm gen:api
+
+# Snapshot pytest + vitest + tsc into .local/health/ (gitignored). Not the duty console.
+health-report:
+	PYTHONPATH=apps python3 -m health
