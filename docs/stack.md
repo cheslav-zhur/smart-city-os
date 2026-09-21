@@ -58,7 +58,6 @@ Proposal ≠ execute. Model/tool calls land in audit as data.
 | Simulator | stdlib script (`make sim`) — not IoT |
 | API tests | pytest (+ httpx) against Postgres `city_test` ([ADR 0008](adr/0008-api-tests-use-city-test.md)); CI on `main` / PRs |
 | Console tests | vitest locally; not in CI until the console thickens |
-| Pre-commit | hooks; pre-push runs API/sim gate when Postgres is up |
 | Engineering health | [`engineering-health.md`](engineering-health.md) — `apps/health` snapshot; not the duty console |
 
 ## Explicitly not here
