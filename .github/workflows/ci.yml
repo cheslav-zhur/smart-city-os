@@ -1,4 +1,4 @@
-# Same gate as scripts/run-api-tests.sh (pre-push): sim + migrate + API pytest.
+# Same gate as scripts/run-api-tests.sh: sim + migrate + API pytest.
 # No live LLM. Web vitest stays local until V1-U6 thickens the console tests.
 name: CI
 
