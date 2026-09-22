@@ -9,6 +9,8 @@
 
 An operations desk for urban traffic: **ingest → case → proposal → human decision → audit**.
 
+**Live (GCP):** [https://web-llohwfu5ga-as.a.run.app](https://web-llohwfu5ga-as.a.run.app) — how it is hosted: [`docs/deploy-gcp.md`](docs/deploy-gcp.md).
+
 A serious slice of govtech — and a way to practice complex backend / AI patterns in one loop. Not a chat demo, not a product launch.
 
 Traffic samples arrive on one segment (crash-drop, speeding, jam). A code rule may open a **case**; the system can propose a **drone look**. An operator approves or rejects; the decision is recorded. Drone flight here is case state only — no vehicle or fleet integration.
@@ -19,7 +21,7 @@ Traffic samples arrive on one segment (crash-drop, speeding, jam). A code rule m
 
 Setup, then **`make demo`** (migrate → api + worker + web → live sim until **`make stop`**). Details: [`docs/dev.md`](docs/dev.md).
 
-Hosted console (GCP, `main` → Cloud Run `web`): [`docs/deploy-gcp.md`](docs/deploy-gcp.md). Shell only until api is hosted.
+Hosted stack on push to `main`: [`docs/deploy-gcp.md`](docs/deploy-gcp.md). Local `make demo` stays the daily engineering path.
 
 ## What this demonstrates
 

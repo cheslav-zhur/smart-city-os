@@ -1,5 +1,7 @@
 # Hosted desk (GCP)
 
+**Production console:** [https://web-llohwfu5ga-as.a.run.app](https://web-llohwfu5ga-as.a.run.app)
+
 How **web** + **api** + **worker** + **live sim** are deployed. Local desk stays [`dev.md`](dev.md) (`make demo`). No ADR for this path yet.
 
 Parent tracker: GitHub [#12](https://github.com/cheslav-zhur/smart-city-os/issues/12).
@@ -35,15 +37,47 @@ Images: `asia-southeast1-docker.pkg.dev/city-os-509403/desk/{web,api,sim}:<sha>`
 Push to `main` → Cloud Build (`cloudbuild.yaml`) → build/push `web` + `api` + `sim` → migrate → deploy `api` → deploy `worker` + `sim` + `web` (web/sim get the api URL).
 
 ```mermaid
-flowchart LR
-  browser[Browser] --> web[Cloud Run web]
-  web -->|ID token| api[Cloud Run api]
-  sim[Cloud Run sim] -->|ID token| api
-  api --> sql[(Cloud SQL city-os)]
-  worker[Cloud Run worker] --> sql
+flowchart TB
+  browser[Browser]
+
+  subgraph webSvc ["web · public · desk/web"]
+    caddy[Caddy static Vite dist]
+    proxy[token_proxy.py · ID token]
+    caddy --- proxy
+  end
+
+  subgraph apiSvc ["api · private · desk/api"]
+    uvicorn["uvicorn app.main:app"]
+  end
+
+  subgraph workerSvc ["worker · private · desk/api"]
+    wloop["python -m app.worker · /health"]
+  end
+
+  subgraph simSvc ["sim · private · desk/sim"]
+    slive["python run.py --live · /health"]
+  end
+
+  sql[(Cloud SQL city-os)]
+  secret[Secret Manager city-os-database-url]
+
+  browser -->|HTTPS / and /api| caddy
+  proxy -->|API_UPSTREAM + Bearer| uvicorn
+  slive -->|CITY_API_URL + CITY_API_ID_TOKEN| uvicorn
+  uvicorn --> sql
+  wloop --> sql
+  uvicorn -.-> secret
+  wloop -.-> secret
 ```
 
-Caddy serves Vite `dist` and strips `/api` toward a local **token proxy**, which attaches a Cloud Run identity token and forwards to private `api`. Sim posts `/events` the same way (metadata ID token when `CITY_API_ID_TOKEN` is set). Worker claims Postgres jobs. When `PORT` is set (Cloud Run), worker and sim also serve stdlib `/health`; local `make worker` / `make sim` leave `PORT` unset.
+| Service | Image | Process | Auth / scale | Talks to |
+|---------|-------|---------|--------------|----------|
+| `web` | `desk/web` | Caddy + `token_proxy` | `allUsers`; scale-to-zero ok | private `api` via ID token |
+| `api` | `desk/api` | `uvicorn` | private; compute SA has `run.invoker` | Cloud SQL + `DATABASE_URL` secret |
+| `worker` | `desk/api` (same) | `python -m app.worker` | private; `min-instances=1`, CPU always on | same DB (claims jobs) |
+| `sim` | `desk/sim` | `python run.py --live` | private; `min-instances=1`, CPU always on | private `api` `/events` via ID token |
+
+Caddy keeps the browser on one origin (`/api` stripped). Local `make worker` / `make sim` leave `PORT` unset (no `/health`); Cloud Run sets `PORT` so probes pass.
 
 ## One-time (empty project)
 
@@ -73,9 +107,13 @@ gcloud iam service-accounts add-iam-policy-binding "${RUNTIME_SA}" \
   --role=roles/iam.serviceAccountUser
 
 # Runtime needs Cloud SQL + secrets; Build SA needs to run jobs / read secrets for migrate.
+# Trigger runs as RUNTIME_SA, so it also needs run.admin to set invoker IAM on api/web.
 gcloud projects add-iam-policy-binding city-os-509403 \
   --member="serviceAccount:${RUNTIME_SA}" \
   --role=roles/cloudsql.client
+gcloud projects add-iam-policy-binding city-os-509403 \
+  --member="serviceAccount:${RUNTIME_SA}" \
+  --role=roles/run.admin
 gcloud secrets add-iam-policy-binding city-os-database-url \
   --member="serviceAccount:${RUNTIME_SA}" \
   --role=roles/secretmanager.secretAccessor
@@ -118,9 +156,32 @@ Manual deploy:
 gcloud builds submit --config=cloudbuild.yaml --project=city-os-509403
 ```
 
+## Build graph and caches (future)
+
+**Parallel today.** `build-web` / `build-api` / `build-sim` start together (`waitFor: ["-"]` on api/sim). After migrate+deploy api, `deploy-worker` / `deploy-sim` / `deploy-web` run in parallel. Do not parallelize migrate with deploy api — schema must land first.
+
+**Module caches: none in Cloud Build yet.** No remote pnpm/pip store, no Kaniko, no `--cache-from`, no BuildKit cache mounts in `cloudbuild.yaml`. Local Compose named volumes do not apply here.
+
+What Docker layer cache can still help (only when the builder reuses layers):
+
+| Image | Today | Later if builds feel slow |
+|-------|--------|---------------------------|
+| `web` | `package.json` + lock copied before `pnpm install` — lock-stable layers may hit | BuildKit `RUN --mount=type=cache` for the pnpm store; `--cache-from …/web:latest` |
+| `api` | `COPY app` before `pip install` — any code change busts pip; `--no-cache-dir` | Copy only `pyproject.toml` → install → then `app`; BuildKit pip cache; `--cache-from …/api:latest` |
+| `sim` | stdlib only — nothing to cache | — |
+
+Optional speed (cost): `options.machineType` (e.g. `E2_HIGHCPU_8`) — faster CPUs, not a dependency cache.
+
 ## After deploy
 
-Console URL: Cloud Run → `web` → URL. `/api/*` goes to private `api` via the token proxy. Sim keeps posting unique incidents; worker fills empty opinions until an LLM secret is wired.
+| Service | URL | Notes |
+|---------|-----|--------|
+| `web` | https://web-llohwfu5ga-as.a.run.app | Public console (`allUsers`) |
+| `api` | https://api-llohwfu5ga-as.a.run.app | Private — browser uses `/api` on `web` |
+| `worker` | https://worker-llohwfu5ga-as.a.run.app | Private; `/health` only |
+| `sim` | https://sim-llohwfu5ga-as.a.run.app | Private; `/health` only |
+
+`/api/*` on `web` goes to private `api` via the token proxy. Sim keeps posting unique incidents; worker fills empty opinions until an LLM secret is wired.
 
 ## Spend
 
