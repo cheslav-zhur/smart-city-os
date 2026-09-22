@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Live shift desk: occupancy, sticky card, endless stream</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #5a5a5a;
+    --line: #d8d8d0;
+    --bg: #faf9f6;
+    --card: #ffffff;
+    --accent: #0b6e4f;
+    --warn: #8a4b08;
+    --amber: #b45309;
+    --code-bg: #f0efe8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  h1 { font-size: 1.65rem; line-height: 1.25; margin: 0 0 0.75rem; }
+  h2 { font-size: 1.15rem; margin: 2rem 0 0.6rem; }
+  h3 { font-size: 1rem; margin: 1.25rem 0 0.4rem; }
+  p, li { max-width: 70ch; }
+  .meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1rem;
+    margin: 0 0 1.5rem;
+    padding: 0.85rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .meta dt { color: var(--muted); }
+  .meta dd { margin: 0; }
+  .diagram {
+    width: 100%;
+    max-width: 42rem;
+    margin: 1rem 0 1.25rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.75rem;
+    overflow-x: auto;
+  }
+  .diagram svg { display: block; width: 100%; height: auto; }
+  .note {
+    border-left: 3px solid var(--accent);
+    padding: 0.35rem 0 0.35rem 0.85rem;
+    margin: 0.75rem 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .warn {
+    border-left-color: var(--warn);
+  }
+  pre, code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.85rem 1rem;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  .ann {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .ann figure {
+    margin: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .ann figcaption {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    background: #f7f6f1;
+  }
+  .ann pre { margin: 0; border: 0; border-radius: 0; }
+  .k { color: #0b6e4f; }
+  .c { color: #6b6b6b; }
+  .s { color: #8a4b08; }
+  footer {
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  ul { padding-left: 1.2rem; }
+  .contrast {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 640px) {
+    .contrast { grid-template-columns: 1fr; }
+  }
+  .contrast article {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.92rem;
+  }
+  .contrast h3 { margin: 0 0 0.4rem; }
+  .roll {
+    font-size: 0.92rem;
+    color: var(--muted);
+  }
+  .roll code { font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Live shift desk: occupancy, sticky card, endless stream</h1>
+  <dl class="meta">
+    <dt>Date</dt>
+    <dd>2026-09-21</dd>
+    <dt>Input shape</dt>
+    <dd>diff</dd>
+    <dt>Subject</dt>
+    <dd>feat/live-shift-desk vs origin/main (PR #10, HEAD 4a11850)</dd>
+  </dl>
+
+  <p>
+    Первая v1-нарезка оставила деск живым на вид и мёртвым по факту:
+    кассета заканчивалась, а единственный <code>open</code> слот
+    нельзя было занять новым инцидентом. Этот diff чинит именно это:
+    смена может идти, пока ты не остановишь симулятор.
+  </p>
+
+  <p>
+    Три независимых механизма, которые должны сойтись на экране:
+    <strong>occupancy</strong> (один <code>open</code> на сегмент,
+    промах — <code>outdated</code>), <strong>липкая карточка</strong>
+    (новый <code>open</code> не крадёт выбор), <strong>живой поток</strong>
+    (уникальные инциденты до <code>make stop</code>).
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="occ-title occ-desc">
+      <title id="occ-title">Case status: open splits three ways</title>
+      <desc id="occ-desc">From open, operator Send goes to approved, operator Dismiss to rejected, next matching rule to outdated. Only open has buttons and drone flight.</desc>
+      <rect x="240" y="16" width="160" height="48" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+      <text x="320" y="36" text-anchor="middle" font-size="14" fill="#1a1a1a">open</text>
+      <text x="320" y="54" text-anchor="middle" font-size="11" fill="#5a5a5a">Send / Dismiss live</text>
+
+      <line x1="200" y1="64" x2="90" y2="120" stroke="#1a1a1a" stroke-width="1.5"/>
+      <line x1="320" y1="64" x2="320" y2="120" stroke="#1a1a1a" stroke-width="1.5"/>
+      <line x1="440" y1="64" x2="550" y2="120" stroke="#b45309" stroke-width="1.5"/>
+
+      <rect x="16" y="124" width="148" height="72" rx="8" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+      <text x="90" y="152" text-anchor="middle" font-size="13" fill="#1a1a1a">approved</text>
+      <text x="90" y="172" text-anchor="middle" font-size="11" fill="#5a5a5a">operator Send</text>
+      <text x="90" y="186" text-anchor="middle" font-size="11" fill="#5a5a5a">drone may fly</text>
+
+      <rect x="246" y="124" width="148" height="72" rx="8" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+      <text x="320" y="152" text-anchor="middle" font-size="13" fill="#1a1a1a">rejected</text>
+      <text x="320" y="172" text-anchor="middle" font-size="11" fill="#5a5a5a">operator Dismiss</text>
+      <text x="320" y="186" text-anchor="middle" font-size="11" fill="#5a5a5a">human close</text>
+
+      <rect x="476" y="124" width="148" height="72" rx="8" fill="#fff8ee" stroke="#b45309" stroke-width="2"/>
+      <text x="550" y="152" text-anchor="middle" font-size="13" fill="#1a1a1a">outdated</text>
+      <text x="550" y="172" text-anchor="middle" font-size="11" fill="#8a4b08">system miss</text>
+      <text x="550" y="186" text-anchor="middle" font-size="11" fill="#8a5a08">not Dismiss</text>
+    </svg>
+  </div>
+  <p>
+    Кнопки и полёт дрона существуют только на <code>open</code>.
+    <code>outdated</code> — это честный промах occupancy: система
+    отдала слот новому инциденту, потому что ты не успел решить.
+    Это не <code>rejected</code>: Dismiss пишет оператор.
+  </p>
+
+  <h2>Occupancy: displace в том же шаге</h2>
+  <p>
+    Раньше <code>maybe_open_case</code> видел любой <code>open</code>
+    и сразу возвращал <code>None</code>. Событие сохранялось, слот
+    стоял. Теперь правило сначала спрашивает: это событие вообще
+    открыло бы кейс? Если нет — слот не трогаем. Если да — текущий
+    <code>open</code> становится <code>outdated</code>, и сразу
+    вставляется новый.
+  </p>
+
+  <div class="ann">
+    <figure>
+      <pre><code><span class="k">existing</span> = session.scalar(
+    select(Case)
+    .where(Case.segment == segment, Case.status == CASE_OPEN)
+    .<span class="k">with_for_update</span>()
+)
+samples = _recent_samples(...)
+<span class="k">if not _rule_matches(kind, samples):</span>
+    return None
+
+<span class="k">if existing is not None:</span>
+    _displace_open_case(session, existing)
+
+case = Case(..., status=CASE_OPEN, trigger_kind=kind)</code></pre>
+      <figcaption>
+        Сначала lock строки, потом правило, потом displace.
+        Не наоборот: два параллельных matching POST не должны
+        создать два <code>open</code>. Частичный unique индекс
+        на <code>status='open'</code> остаётся страховкой.
+      </figcaption>
+    </figure>
+  </div>
+
+  <p>
+    Displace пишет audit как система, не как дежурный:
+    actor <code>system</code>, action <code>outdated</code>,
+    why <code>displaced by a newer incident</code>.
+    Pending jobs отменяются тем же хелпером, что и на Send/Dismiss.
+    Running job не убивают из displace: worker сам упрётся
+    в забор <code>WHERE cases.status='open'</code> и не запишет
+    opinions на уже устаревший кейс. Дрон остаётся <code>idle</code>.
+  </p>
+
+  <div class="ann">
+    <figure>
+      <pre><code>case = session.scalar(
+    select(Case)
+    .where(Case.id == job.case_id, Case.status == <span class="k">_CASE_OPEN</span>)
+    .with_for_update()
+)
+<span class="k">if case is None:</span>
+    job.status = JOB_CANCELLED
+    return PERSIST_CANCELLED</code></pre>
+      <figcaption>
+        Это тот же leftover-fence, что после человеческого decide.
+        Occupancy не учит worker новый статус — оно переиспользует
+        «ещё open?». Decide на <code>outdated</code> — 409 через
+        существующий CAS <code>UPDATE … WHERE status='open'</code>.
+      </figcaption>
+    </figure>
+  </div>
+
+  <p class="note warn">
+    U1 сначала уехал с grace-окном (~20с). Ты выбрал instant
+    displace: новый matching инцидент должен открываться сразу.
+    Живой контракт и код — без hold. Секция U1 в плане оставлена
+    как shipped; это не баг документации, а правило «не переписывать
+    сделанный юнит задним числом». Amendment 2026-09-21 — overlay.
+  </p>
+
+  <h2>Карточка не прыгает, список — окно</h2>
+  <p>
+    Occupancy без консоли был бы ложью на экране: новый
+    <code>open</code> встал бы первым в списке, и старый
+    <code>nextSelectedId</code> уехал бы за ним. Ты читаешь
+    кейс 1, а карточка уже кейс 2. Поэтому выбор пинится
+    с первой селекции — включая автовыбор первого
+    <code>open</code> — и больше сам не следует за новым рядом.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 640 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="win-title win-desc">
+      <title id="win-title">Store versus console window</title>
+      <desc id="win-desc">GET /cases returns the full store. The console shows the newest 10 ids plus the selected row if it aged off. Selection does not follow a newly opened case.</desc>
+      <rect x="16" y="24" width="200" height="164" rx="8" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+      <text x="116" y="48" text-anchor="middle" font-size="12" fill="#5a5a5a">GET /cases store</text>
+      <text x="36" y="76" font-size="12" fill="#0b6e4f">12 open jam</text>
+      <text x="36" y="96" font-size="12" fill="#1a1a1a">11 outdated …</text>
+      <text x="36" y="116" font-size="12" fill="#1a1a1a">…</text>
+      <text x="36" y="136" font-size="12" fill="#8a4b08">2 outdated (selected)</text>
+      <text x="36" y="156" font-size="12" fill="#5a5a5a">1 rejected</text>
+      <text x="36" y="172" font-size="11" fill="#5a5a5a">хвост не режем</text>
+
+      <polygon points="232,106 268,96 268,116" fill="#0b6e4f"/>
+
+      <rect x="284" y="24" width="340" height="164" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+      <text x="454" y="48" text-anchor="middle" font-size="12" fill="#5a5a5a">visible: newest 10 ∪ selected</text>
+      <text x="304" y="80" font-size="12" fill="#0b6e4f">12 jam  open     ← top</text>
+      <text x="304" y="100" font-size="12" fill="#1a1a1a">11 …   outdated</text>
+      <text x="304" y="120" font-size="12" fill="#1a1a1a">… ten newest …</text>
+      <text x="304" y="148" font-size="12" fill="#8a4b08">2  crash_drop  outdated  pinned</text>
+      <text x="304" y="172" font-size="11" fill="#5a5a5a">кнопки disabled: статус не open</text>
+    </svg>
+  </div>
+  <p>
+    Окно — консольное. API по-прежнему отдаёт весь store.
+    Trim/paging кейсов отложены: смена длиннее — payload больше.
+    Cap 10 ты затем подкрутишь после первой живой смены.
+  </p>
+
+  <div class="ann">
+    <figure>
+      <pre><code><span class="k">export function nextSelectedId</span>(cases, current) {
+  <span class="k">if (current != null && cases.some(row =&gt; row.id === current))</span>
+    return current
+  return cases.find(row =&gt; row.status === CASE_OPEN)?.id ?? current
+}
+
+<span class="k">export function visibleCases</span>(cases, selectedId) {
+  const newest = [...cases].sort((a, b) =&gt; b.id - a.id)
+    .slice(0, CASE_LIST_WINDOW)
+  <span class="c">// union selected if it aged off those ten</span>
+}</code></pre>
+      <figcaption>
+        Без union pinned ряд исчез бы с экрана как раз тогда,
+        когда карточка обязана на нём остаться. Cap и «карточка
+        не прыгает» иначе дерутся.
+      </figcaption>
+    </figure>
+  </div>
+
+  <h2>Kind на кейсе, не на ленте</h2>
+  <p>
+    <code>trigger_kind</code> уже лежал на строке кейса. В этом
+    cut он впервые едет в <code>CaseListItem</code>, в OpenAPI dump
+    и в orval. Список и карточка печатают сохранённые строки
+    <code>crash_drop</code> / <code>speeding</code> / <code>jam</code> —
+    без новой копирайтерской легенды. Last speeds остаётся таблицей
+    скоростей: kind сэмпла на ленте — это kind события, не identity кейса.
+  </p>
+  <p>
+    Неизвестный статус раньше падал в тон <code>rejected</code>.
+    Пока <code>outdated</code> не научили отдельному amber-chip,
+    живой промах выглядел как Dismiss. Это и есть критерий U2:
+    miss visually not dismiss.
+  </p>
+
+  <h2>Поток — не кассета по кругу</h2>
+  <div class="contrast">
+    <article>
+      <h3><code>make sim</code></h3>
+      <p>
+        Один проход <code>MIXED_TAPE</code>: collapse → speeding → jam.
+        Фикстура регрессии. После первого opened case
+        <code>run.py</code> без <code>--live</code> всё ещё выходит.
+      </p>
+    </article>
+    <article>
+      <h3><code>make demo</code></h3>
+      <p>
+        <code>python apps/sim/run.py --live</code> в фоне.
+        Процедурный цикл: calm moving → opening sequence,
+        kinds по кругу, уникальные <code>event_id</code>.
+        Стоп — <code>make stop</code>, который убивает sim pid первым.
+      </p>
+    </article>
+  </div>
+  <p>
+    Calm — не ожидание grace. Crash-rule смотрит «было движение,
+    потом ≈0». Если хвост инцидента уже нулевой, следующий
+    crash не откроется, пока не вставишь moving samples.
+    Speeding без паузы стробил бы слот. Поэтому между opening
+    стоит шесть moving точек: читаемая смена и возможность
+    снова открыть collapse.
+  </p>
+
+  <div class="ann">
+    <figure>
+      <pre><code><span class="k">def iter_live_samples</span>() -&gt; Iterator[Sample]:
+    clock = 0
+    <span class="k">for kind in cycle(EVENT_KINDS):</span>
+        block = concat_tapes(build_calm_tape(), list(OPENING_TAPES[kind]))
+        for offset, speed, sample_kind in block:
+            yield (clock + offset, speed, sample_kind)
+        clock += block[-1][0] + STEP_SECONDS</code></pre>
+      <figcaption>
+        Симулятор по-прежнему только HTTP POST. Базу не пишет.
+        Это тот же контракт, что у кассеты; отличается только
+        генератор и то, что цикл не заканчивается сам.
+      </figcaption>
+    </figure>
+  </div>
+
+  <h2>Что в этом cut сознательно не трогали</h2>
+  <ul>
+    <li>ADR 0002 (дроном управляет человек) не редактировали. Четвёртый статус — plan KTD + horizon copy в U5, без нового ADR.</li>
+    <li>Первый duty-desk план (V1-U1–V1-U7) и его KTD4 не переписывали задним числом.</li>
+    <li>Kind-колонка на Last speeds отложена.</li>
+    <li>Сам store кейсов не пейджится — только окно на консоли.</li>
+    <li>GitHub #1 / #7 / #8 — первая нарезка, уже на main. Этот PR закрывает #9.</li>
+  </ul>
+
+  <h2>Как юниты сложились</h2>
+  <p class="roll">
+    <code>379f2ab</code> план →
+    <code>cb67f84</code> U1 outdated+grace →
+    <code>08be671</code> U2 kind/chip/orval →
+    <code>59dbbe3</code> U3 pin+window →
+    <code>d4c852f</code> instant displace (amendment, не новый юнит) →
+    <code>bb05eb5</code> U4 generator →
+    <code>5c3496c</code> U5 demo+horizon →
+    <code>4a11850</code> merge origin/main.
+    Merge не несёт продукта: CONCEPTS.md с Occupancy/Outdated уже
+    на main отдельным коммитом.
+  </p>
+  <p>
+    Horizon «Done enough» теперь: симулятор постит, пока не
+    <code>make stop</code>; один <code>open</code>; промах —
+    <code>outdated</code>. HITL первой нарезки держится: только
+    человеческий Send поднимает drone stub.
+  </p>
+</main>
+<footer>Composed 2026-09-21 by ce-explain</footer>
+</body>
+</html>

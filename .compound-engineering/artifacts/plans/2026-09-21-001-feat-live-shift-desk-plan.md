@@ -339,6 +339,8 @@ Parent cut: [#9](https://github.com/cheslav-zhur/smart-city-os/issues/9). Open a
 | U4 | — | done |
 | U5 | — | done |
 
+- **Explainer:** [`.compound-engineering/artifacts/explainers/2026-09-21-live-shift-desk.html`](../explainers/2026-09-21-live-shift-desk.html)
+
 ### U1. Grace occupancy and outdated
 
 - **Status:** done
