@@ -1,10 +1,11 @@
-# Build and deploy hosted web + api from main.
+# Build and deploy hosted web + api + worker from main.
 # One-time registry + trigger: docs/deploy-gcp.md
 substitutions:
   _REGION: asia-southeast1
   _AR_REPO: desk
   _WEB: web
   _API: api
+  _WORKER: worker
   _SQL_INSTANCE: city-os-509403:asia-southeast1:city-os
 
 steps:
@@ -100,6 +101,34 @@ steps:
           --role=roles/run.invoker \
           --quiet
     waitFor: [push-api]
+
+  # Same api image; poll loop + /health on PORT. Always-on CPU so idle still claims jobs.
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: deploy-worker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        IMG="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}:${COMMIT_SHA}"
+        PROJECT_NUMBER="$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)')"
+        RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+        gcloud run deploy ${_WORKER} \
+          --project=${PROJECT_ID} \
+          --region=${_REGION} \
+          --image="$${IMG}" \
+          --service-account="$${RUNTIME_SA}" \
+          --set-cloudsql-instances=${_SQL_INSTANCE} \
+          --set-secrets=DATABASE_URL=city-os-database-url:latest \
+          --command=python \
+          --args=-m,app.worker \
+          --port=8080 \
+          --no-allow-unauthenticated \
+          --min-instances=1 \
+          --no-cpu-throttling \
+          --quiet
+    waitFor: [migrate-and-deploy-api]
 
   # Deploy web with API_UPSTREAM → private api (token_proxy adds ID token).
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk

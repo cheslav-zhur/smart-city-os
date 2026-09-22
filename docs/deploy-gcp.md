@@ -4,7 +4,7 @@ How **web** + **api** are deployed. Local desk stays [`dev.md`](dev.md) (`make d
 
 Parent tracker: GitHub [#12](https://github.com/cheslav-zhur/smart-city-os/issues/12).
 
-This is a **hosted desk shell + API**. Worker and live sim are not hosted yet — the case list stays empty until sim posts events (or you ingest by hand).
+This is a **hosted desk shell + API + worker**. Live sim is not hosted yet — the case list stays empty until something posts events (or you ingest by hand). Worker runs **without** `LLM_API_KEY` for now (empty opinions; approve/reject still work).
 
 ## What is hosted
 
@@ -12,7 +12,8 @@ This is a **hosted desk shell + API**. Worker and live sim are not hosted yet �
 |-------|-----|--------|
 | `web` | Cloud Run, public URL; Caddy + token proxy → api | same |
 | `api` | Cloud Run, **private** (web SA invoker only) | same |
-| worker / sim | absent | Cloud Run, `min-instances=1` |
+| `worker` | Cloud Run, same `desk/api` image, `python -m app.worker`, **private**, `min-instances=1`, CPU always on | optional `LLM_API_KEY` secret |
+| sim | absent | Cloud Run, `min-instances=1` |
 | Postgres | Cloud SQL `city-os` (Enterprise, `db-f1-micro`, `asia-southeast1`) | same |
 
 ## Project
@@ -22,25 +23,26 @@ This is a **hosted desk shell + API**. Worker and live sim are not hosted yet �
 | Project | `city-os-509403` (`city-os`) |
 | Region | `asia-southeast1` (Singapore) |
 | Artifact Registry | `desk` |
-| Cloud Run | `web` (public), `api` (private) |
+| Cloud Run | `web` (public), `api` + `worker` (private) |
 | Cloud SQL | `city-os` (connection `city-os-509403:asia-southeast1:city-os`) |
 | DB role | `city` (same name as local) |
 | Secrets | `city-os-db-password`, `city-os-database-url` (full URL for Run; do not put in git or chat) |
 
-Images: `asia-southeast1-docker.pkg.dev/city-os-509403/desk/{web,api}:<sha>`.
+Images: `asia-southeast1-docker.pkg.dev/city-os-509403/desk/{web,api}:<sha>` (`worker` reuses `api`).
 
 ## How `main` deploys
 
-Push to `main` → Cloud Build (`cloudbuild.yaml`) → build/push `web` + `api` → Cloud Run Job `api-migrate` (`alembic upgrade head`) → deploy `api` (Cloud SQL socket + secret) → deploy `web` with `API_UPSTREAM` = api URL.
+Push to `main` → Cloud Build (`cloudbuild.yaml`) → build/push `web` + `api` → Cloud Run Job `api-migrate` → deploy `api` → deploy `worker` (same image, job loop + `/health` on `$PORT`) → deploy `web` with `API_UPSTREAM` = api URL.
 
 ```mermaid
 flowchart LR
   browser[Browser] --> web[Cloud Run web]
   web -->|ID token| api[Cloud Run api]
   api --> sql[(Cloud SQL city-os)]
+  worker[Cloud Run worker] --> sql
 ```
 
-Caddy serves Vite `dist` and strips `/api` toward a local **token proxy**, which attaches a Cloud Run identity token and forwards to private `api`. Same browser-origin shape as Vite in [`../apps/web/vite.config.ts`](../apps/web/vite.config.ts).
+Caddy serves Vite `dist` and strips `/api` toward a local **token proxy**, which attaches a Cloud Run identity token and forwards to private `api`. Same browser-origin shape as Vite in [`../apps/web/vite.config.ts`](../apps/web/vite.config.ts). Worker is not on the browser path: it claims Postgres jobs. When `PORT` is set (Cloud Run), it also serves stdlib `/health` so probes pass; local `make worker` leaves `PORT` unset.
 
 ## One-time (empty project)
 
@@ -84,7 +86,7 @@ gcloud secrets add-iam-policy-binding city-os-database-url \
 # Also: ALTER DATABASE city OWNER TO city; (once, as postgres)
 ```
 
-2nd-gen GitHub connection + trigger `web-main` (name kept; builds web **and** api):
+2nd-gen GitHub connection + trigger `web-main` (name kept; builds web, api, **and** worker):
 
 ```bash
 gcloud builds connections create github github \
@@ -117,11 +119,11 @@ gcloud builds submit --config=cloudbuild.yaml --project=city-os-509403
 
 ## After deploy
 
-Console URL: Cloud Run → `web` → URL. `/api/*` goes to private `api` via the token proxy. Worker/sim still absent — list empty until something ingests.
+Console URL: Cloud Run → `web` → URL. `/api/*` goes to private `api` via the token proxy. Worker polls jobs with empty opinions until an LLM secret is wired. Sim still absent — list empty until something ingests.
 
 ## Spend
 
-Cloud SQL `city-os` bills while the instance exists, even with no traffic. Cloud Run `web`/`api` without `min-instances` are near-zero idle. Stop SQL when the hosted desk is not needed:
+Cloud SQL `city-os` bills while the instance exists, even with no traffic. Cloud Run `web`/`api` without `min-instances` are near-zero idle. **`worker` keeps `min-instances=1` + always-on CPU** — small steady cost while the hosted desk is up. Stop SQL (and scale worker to zero / delete the service) when not needed:
 
 ```bash
 gcloud sql instances patch city-os --activation-policy=NEVER --project=city-os-509403

@@ -15,5 +15,7 @@ RUN pip install --no-cache-dir .
 ENV PORT=8080
 EXPOSE 8080
 
-# Cloud Run sets PORT. Alembic uses the same image (`alembic upgrade head`).
+# Cloud Run sets PORT. Same image: api (default), migrate job (`alembic`), worker
+# (`python -m app.worker` — job loop + /health when PORT is set).
 CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+
