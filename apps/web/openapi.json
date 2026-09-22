@@ -352,6 +352,17 @@
               }
             ],
             "title": "Critic Opinion"
+          },
+          "trigger_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Kind"
           }
         },
         "type": "object",
@@ -361,7 +372,8 @@
           "status",
           "drone_status",
           "dispatcher_opinion",
-          "critic_opinion"
+          "critic_opinion",
+          "trigger_kind"
         ],
         "title": "CaseListItem",
         "description": "Console case row: card fields only, no audit or timestamps."

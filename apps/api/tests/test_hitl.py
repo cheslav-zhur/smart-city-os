@@ -84,3 +84,33 @@ def test_second_decision_is_409(client) -> None:
 
     assert first.status_code == 200
     assert second.status_code == 409
+
+
+def test_decide_on_outdated_is_409(client, db_session) -> None:
+    case_id = _open_case(client)
+
+    displaced = client.post(
+        "/events",
+        json={
+            "event_id": "hitl-spd",
+            "segment": "A",
+            "speed": 90.0,
+            "kind": "speeding",
+            "recorded_at": (
+                datetime(2026, 9, 11, 5, 0, tzinfo=UTC) + timedelta(seconds=20)
+            ).isoformat(),
+        },
+    )
+    assert displaced.status_code == 201
+    assert displaced.json()["case_id"] is not None
+    assert displaced.json()["case_id"] != case_id
+
+    db_session.expire_all()
+    outdated = db_session.get(Case, case_id)
+    assert outdated is not None
+    assert outdated.status == "outdated"
+
+    approve = client.post(f"/cases/{case_id}/approve")
+    reject = client.post(f"/cases/{case_id}/reject")
+    assert approve.status_code == 409
+    assert reject.status_code == 409

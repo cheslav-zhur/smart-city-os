@@ -32,7 +32,8 @@ def test_collapse_sequence_opens_one_case(client, db_session) -> None:
     assert moving.status_code == 201
     assert moving.json()["case_id"] is None
     assert stopped.status_code == 201
-    assert stopped.json()["case_id"] is not None
+    first_id = stopped.json()["case_id"]
+    assert first_id is not None
     assert db_session.scalar(select(func.count()).select_from(Case)) == 1
     case = db_session.scalar(select(Case))
     assert case is not None
@@ -41,8 +42,19 @@ def test_collapse_sequence_opens_one_case(client, db_session) -> None:
     again_moving = client.post("/events", json=_event("sim-012", 35.0, seconds=10))
     again_stopped = client.post("/events", json=_event("sim-013", 0.2, seconds=15))
     assert again_moving.json()["case_id"] is None
-    assert again_stopped.json()["case_id"] is None
-    assert db_session.scalar(select(func.count()).select_from(Case)) == 1
+    second_id = again_stopped.json()["case_id"]
+    assert second_id is not None
+    assert second_id != first_id
+    db_session.expire_all()
+    first = db_session.get(Case, first_id)
+    second = db_session.get(Case, second_id)
+    assert first is not None
+    assert first.status == "outdated"
+    assert second is not None
+    assert second.status == "open"
+    assert db_session.scalar(
+        select(func.count()).select_from(Case).where(Case.status == "open")
+    ) == 1
 
 
 def test_no_collapse_opens_no_case(client, db_session) -> None:

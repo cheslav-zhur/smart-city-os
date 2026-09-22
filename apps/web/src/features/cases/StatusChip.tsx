@@ -9,6 +9,7 @@ const tones: Record<CaseStatus, string> = {
   open: 'bg-teal-500/15 text-teal-800 dark:text-teal-200',
   approved: 'bg-slate-900/8 text-slate-700 dark:bg-white/10 dark:text-slate-200',
   rejected: 'bg-slate-900/5 text-slate-500 dark:bg-white/5 dark:text-slate-400',
+  outdated: 'bg-amber-500/15 text-amber-900 dark:text-amber-200',
 }
 
 export function StatusChip({ status, size = 'md' }: StatusChipProps) {

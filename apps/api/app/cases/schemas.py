@@ -12,6 +12,7 @@ class CaseListItem(BaseModel):
     drone_status: str
     dispatcher_opinion: str | None
     critic_opinion: str | None
+    trigger_kind: str | None
 
 
 class CaseDecisionOut(BaseModel):

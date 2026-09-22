@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   getCasesCasesGet,
   getGetCaseAuditCasesCaseIdAuditGetQueryKey,
@@ -13,9 +13,10 @@ import { useGetEventsEventsGet } from '../api/generated/events/events'
 import type { CaseDecisionOut } from '../api/generated/models/caseDecisionOut'
 import type { CaseListItem } from '../api/generated/models/caseListItem'
 import {
-  CASE_OPEN,
   CaseCard,
   CaseList,
+  nextSelectedId,
+  visibleCases,
   type DecideKind,
 } from '../features/cases'
 import { ThemeToggle } from '../shared/theme'
@@ -23,17 +24,6 @@ import { Panel } from '../shared/ui'
 
 const POLL_MS = 2000
 const LAST_SPEED_COUNT = 8
-
-function nextSelectedId(
-  cases: CaseListItem[],
-  current: number | null,
-  pinned: boolean,
-): number | null {
-  if (pinned && current != null && cases.some((row) => row.id === current)) {
-    return current
-  }
-  return cases.find((row) => row.status === CASE_OPEN)?.id ?? current
-}
 
 function mergeDecision(
   cases: CaseListItem[],
@@ -54,7 +44,6 @@ export default function App() {
   const queryClient = useQueryClient()
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [decideError, setDecideError] = useState(false)
-  const pinnedRef = useRef(false)
 
   const casesQuery = useGetCasesCasesGet({
     query: { refetchInterval: POLL_MS },
@@ -88,21 +77,14 @@ export default function App() {
       (selectedId != null && auditQuery.isFetching))
 
   useEffect(() => {
-    if (!casesQuery.isSuccess || !eventsQuery.isSuccess || casesQuery.data == null) {
+    if (!casesQuery.isSuccess || casesQuery.data == null) {
       return
     }
+    // Clear decide error only when cases refresh — not on events-only poll.
     setDecideError(false)
     const nextCases = casesQuery.data.data
-    setSelectedId((current) =>
-      nextSelectedId(nextCases, current, pinnedRef.current),
-    )
-  }, [
-    casesQuery.data,
-    casesQuery.dataUpdatedAt,
-    casesQuery.isSuccess,
-    eventsQuery.dataUpdatedAt,
-    eventsQuery.isSuccess,
-  ])
+    setSelectedId((current) => nextSelectedId(nextCases, current))
+  }, [casesQuery.data, casesQuery.dataUpdatedAt, casesQuery.isSuccess])
 
   const approveMutation = usePostApproveCasesCaseIdApprovePost()
   const rejectMutation = usePostRejectCasesCaseIdRejectPost()
@@ -114,7 +96,6 @@ export default function App() {
       : null
 
   function selectCase(id: number) {
-    pinnedRef.current = true
     setSelectedId(id)
   }
 
@@ -122,7 +103,6 @@ export default function App() {
     if (selectedId == null) {
       return
     }
-    pinnedRef.current = true
     try {
       const result =
         kind === 'approve'
@@ -154,12 +134,21 @@ export default function App() {
         }),
       ])
     } catch {
-      // Poll will refresh status; a repeat POST is 409 once decided.
+      // 409 after displace: refresh cases so Send/Dismiss disable immediately.
       setDecideError(true)
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: getGetCasesCasesGetQueryKey(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getGetCaseAuditCasesCaseIdAuditGetQueryKey(selectedId),
+        }),
+      ])
     }
   }
 
   const selected = cases.find((row) => row.id === selectedId) ?? null
+  const listedCases = visibleCases(cases, selectedId)
 
   return (
     <main className="min-h-screen px-6 py-8 text-slate-800 md:px-10 dark:text-slate-100">
@@ -216,7 +205,7 @@ export default function App() {
             Cases
           </h2>
           <CaseList
-            cases={cases}
+            cases={listedCases}
             selectedId={selectedId}
             onSelect={selectCase}
             loading={casesQuery.isLoading && casesQuery.data == null}

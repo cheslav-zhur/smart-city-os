@@ -21,8 +21,8 @@ sim:
 worker:
 	cd apps/api && .venv/bin/python -m app.worker
 
-# One terminal: migrate, start api/web/worker, wait for /health, post the tape.
-# Desk stays up. Logs: .local/demo/*.log
+# One terminal: migrate, start api/web/worker, wait for /health, start live sim.
+# Desk stays up until make stop. Logs: .local/demo/*.log
 demo:
 	bash scripts/run-demo.sh
 

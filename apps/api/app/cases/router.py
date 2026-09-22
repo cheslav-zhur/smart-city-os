@@ -32,6 +32,7 @@ def get_cases(
             drone_status=case.drone_status,
             dispatcher_opinion=case.dispatcher_opinion,
             critic_opinion=case.critic_opinion,
+            trigger_kind=case.trigger_kind,
         )
         for case in list_cases(session)
     ]
