@@ -6,12 +6,13 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![GCP](https://img.shields.io/badge/GCP-4285F4?style=flat-square&logo=googlecloud&logoColor=white)
 
 An operations desk for urban traffic: **ingest → case → proposal → human decision → audit**.
 
 **Live (GCP):** [https://web-llohwfu5ga-as.a.run.app](https://web-llohwfu5ga-as.a.run.app) — how it is hosted: [`docs/deploy-gcp.md`](docs/deploy-gcp.md).
 
-A serious slice of govtech — and a way to practice complex backend / AI patterns in one loop. Not a chat demo, not a product launch.
+A duty desk for traffic ops: the system proposes, the operator decides, every step is recorded.
 
 Traffic samples arrive on one segment (crash-drop, speeding, jam). A code rule may open a **case**; the system can propose a **drone look**. An operator approves or rejects; the decision is recorded. Drone flight here is case state only — no vehicle or fleet integration.
 
