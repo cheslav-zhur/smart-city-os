@@ -3,8 +3,10 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# apps/api/app/settings.py → repo root `.env` (process env still wins).
-_REPO_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+# Local: apps/api/app/settings.py → repo root `.env`. Hosted image is
+# /app/app/settings.py (shallower) — skip the file; process env / secrets win.
+_parents = Path(__file__).resolve().parents
+_REPO_ENV_FILE = _parents[3] / ".env" if len(_parents) > 3 else None
 
 
 class Settings(BaseSettings):
