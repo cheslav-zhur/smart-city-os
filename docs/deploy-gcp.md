@@ -147,8 +147,11 @@ gcloud builds triggers create github \
   --region=asia-southeast1 \
   --project=city-os-509403 \
   --service-account=projects/city-os-509403/serviceAccounts/174386330501-compute@developer.gserviceaccount.com \
-  --include-logs-with-status
+  --include-logs-with-status \
+  --included-files='apps/**,cloudbuild.yaml'
 ```
+
+Trigger only runs when a push to `main` touches `apps/**` or `cloudbuild.yaml` (docs-only commits do not redeploy). Force a full deploy anytime with `gcloud builds submit` or `gcloud builds triggers run web-main --branch=main`.
 
 Manual deploy:
 
