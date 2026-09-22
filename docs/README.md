@@ -9,5 +9,6 @@
 | [`plans/01-mvp.md`](plans/01-mvp.md) | MVP units (U1–U7) — done |
 | [v1 duty desk plan](../.compound-engineering/artifacts/plans/2026-09-16-001-feat-v1-duty-desk-cut-plan.md) | Active cut (V1-U1–V1-U7); status lives there |
 | [`dev.md`](dev.md) | How to run locally (container, venv, `make`, demo path) |
+| [`deploy-gcp.md`](deploy-gcp.md) | Hosted console on GCP (`main` → Cloud Run `web`) |
 
-Chat is not the record. Lock a choice → ADR. Change the product shape → scope. List current tech → `stack.md`. Sequence the build → plan. How to run → `dev.md`. Local test snapshot → `engineering-health.md`.
+Chat is not the record. Lock a choice → ADR. Change the product shape → scope. List current tech → `stack.md`. Sequence the build → plan. How to run → `dev.md`. How the hosted console is deployed → `deploy-gcp.md`. Local test snapshot → `engineering-health.md`.

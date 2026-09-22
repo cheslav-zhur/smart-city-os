@@ -19,6 +19,8 @@ Traffic samples arrive on one segment (crash-drop, speeding, jam). A code rule m
 
 Setup, then **`make demo`** (migrate → api + worker + web → live sim until **`make stop`**). Details: [`docs/dev.md`](docs/dev.md).
 
+Hosted console (GCP, `main` → Cloud Run `web`): [`docs/deploy-gcp.md`](docs/deploy-gcp.md). Shell only until api is hosted.
+
 ## What this demonstrates
 
 - Idempotent event ingest that does not wait on the model
