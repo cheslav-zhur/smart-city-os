@@ -4,10 +4,11 @@
 }
 
 # Cloud Run sets PORT. Browser keeps /api; FastAPI has no prefix.
-# API_UPSTREAM empty → /api 502 until the api service exists.
+# When API_UPSTREAM is set, entrypoint starts token_proxy on :8090
+# (adds Cloud Run ID token → private api). Otherwise :8090 is down → 502.
 :{$PORT} {
 	handle_path /api/* {
-		reverse_proxy {$API_UPSTREAM:http://127.0.0.1:9}
+		reverse_proxy 127.0.0.1:8090
 	}
 
 	handle {

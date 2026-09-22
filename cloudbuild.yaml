@@ -1,41 +1,140 @@
-# Build and deploy the hosted console from main.
+# Build and deploy hosted web + api from main.
 # One-time registry + trigger: docs/deploy-gcp.md
 substitutions:
   _REGION: asia-southeast1
   _AR_REPO: desk
-  _SERVICE: web
+  _WEB: web
+  _API: api
+  _SQL_INSTANCE: city-os-509403:asia-southeast1:city-os
 
 steps:
+  # --- web ---
   - name: gcr.io/cloud-builders/docker
+    id: build-web
     args:
       - build
       - -f
       - apps/web/Dockerfile
       - -t
-      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE}:${COMMIT_SHA}
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_WEB}:${COMMIT_SHA}
       - -t
-      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE}:latest
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_WEB}:latest
       - .
+
   - name: gcr.io/cloud-builders/docker
+    id: push-web
     args:
       - push
       - --all-tags
-      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE}
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
-    entrypoint: gcloud
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_WEB}
+    waitFor: [build-web]
+
+  # --- api ---
+  - name: gcr.io/cloud-builders/docker
+    id: build-api
     args:
-      - run
-      - deploy
-      - ${_SERVICE}
-      - --image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE}:${COMMIT_SHA}
-      - --region=${_REGION}
-      - --allow-unauthenticated
-      - --port=8080
-      - --quiet
+      - build
+      - -f
+      - apps/api/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}:${COMMIT_SHA}
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}:latest
+      - .
+    waitFor: ["-"]
+
+  - name: gcr.io/cloud-builders/docker
+    id: push-api
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}
+    waitFor: [build-api]
+
+  # Migrate via Cloud Run Job (Cloud SQL socket + secret), then deploy api.
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: migrate-and-deploy-api
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        IMG="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}:${COMMIT_SHA}"
+        PROJECT_NUMBER="$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)')"
+        RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+        gcloud run jobs deploy api-migrate \
+          --project=${PROJECT_ID} \
+          --region=${_REGION} \
+          --image="$${IMG}" \
+          --service-account="$${RUNTIME_SA}" \
+          --set-cloudsql-instances=${_SQL_INSTANCE} \
+          --set-secrets=DATABASE_URL=city-os-database-url:latest \
+          --command=alembic \
+          --args=upgrade,head \
+          --max-retries=1 \
+          --task-timeout=10m \
+          --quiet
+
+        gcloud run jobs execute api-migrate \
+          --project=${PROJECT_ID} \
+          --region=${_REGION} \
+          --wait \
+          --quiet
+
+        gcloud run deploy ${_API} \
+          --project=${PROJECT_ID} \
+          --region=${_REGION} \
+          --image="$${IMG}" \
+          --service-account="$${RUNTIME_SA}" \
+          --set-cloudsql-instances=${_SQL_INSTANCE} \
+          --set-secrets=DATABASE_URL=city-os-database-url:latest \
+          --port=8080 \
+          --no-allow-unauthenticated \
+          --quiet
+
+        gcloud run services add-iam-policy-binding ${_API} \
+          --project=${PROJECT_ID} \
+          --region=${_REGION} \
+          --member="serviceAccount:$${RUNTIME_SA}" \
+          --role=roles/run.invoker \
+          --quiet
+    waitFor: [push-api]
+
+  # Deploy web with API_UPSTREAM → private api (token_proxy adds ID token).
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: deploy-web
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        IMG="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_WEB}:${COMMIT_SHA}"
+        API_URL="$(gcloud run services describe ${_API} --project=${PROJECT_ID} --region=${_REGION} --format='value(status.url)')"
+
+        gcloud run deploy ${_WEB} \
+          --project=${PROJECT_ID} \
+          --region=${_REGION} \
+          --image="$${IMG}" \
+          --set-env-vars="API_UPSTREAM=$${API_URL}" \
+          --port=8080 \
+          --allow-unauthenticated \
+          --quiet
+
+        # Durable public invoker (deploy flag alone has been flaky on this project).
+        gcloud run services add-iam-policy-binding ${_WEB} \
+          --project=${PROJECT_ID} \
+          --region=${_REGION} \
+          --member=allUsers \
+          --role=roles/run.invoker \
+          --quiet || true
+    waitFor: [push-web, migrate-and-deploy-api]
 
 images:
-  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE}:${COMMIT_SHA}
-  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE}:latest
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_WEB}:${COMMIT_SHA}
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_WEB}:latest
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}:${COMMIT_SHA}
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}:latest
 
 options:
   logging: CLOUD_LOGGING_ONLY
