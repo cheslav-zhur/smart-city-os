@@ -1,4 +1,4 @@
-# Build and deploy hosted web + api + worker from main.
+# Build and deploy hosted web + api + worker + live sim from main.
 # One-time registry + trigger: docs/deploy-gcp.md
 substitutions:
   _REGION: asia-southeast1
@@ -6,6 +6,7 @@ substitutions:
   _WEB: web
   _API: api
   _WORKER: worker
+  _SIM: sim
   _SQL_INSTANCE: city-os-509403:asia-southeast1:city-os
 
 steps:
@@ -51,6 +52,28 @@ steps:
       - --all-tags
       - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}
     waitFor: [build-api]
+
+  # --- sim ---
+  - name: gcr.io/cloud-builders/docker
+    id: build-sim
+    args:
+      - build
+      - -f
+      - apps/sim/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SIM}:${COMMIT_SHA}
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SIM}:latest
+      - .
+    waitFor: ["-"]
+
+  - name: gcr.io/cloud-builders/docker
+    id: push-sim
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SIM}
+    waitFor: [build-sim]
 
   # Migrate via Cloud Run Job (Cloud SQL socket + secret), then deploy api.
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
@@ -130,6 +153,32 @@ steps:
           --quiet
     waitFor: [migrate-and-deploy-api]
 
+  # Live stream → private api with ID token (same compute SA as web invoker).
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: deploy-sim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        IMG="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SIM}:${COMMIT_SHA}"
+        PROJECT_NUMBER="$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)')"
+        RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+        API_URL="$(gcloud run services describe ${_API} --project=${PROJECT_ID} --region=${_REGION} --format='value(status.url)')"
+
+        gcloud run deploy ${_SIM} \
+          --project=${PROJECT_ID} \
+          --region=${_REGION} \
+          --image="$${IMG}" \
+          --service-account="$${RUNTIME_SA}" \
+          --set-env-vars="CITY_API_URL=$${API_URL},CITY_API_ID_TOKEN=1" \
+          --port=8080 \
+          --no-allow-unauthenticated \
+          --min-instances=1 \
+          --no-cpu-throttling \
+          --quiet
+    waitFor: [push-sim, migrate-and-deploy-api]
+
   # Deploy web with API_UPSTREAM → private api (token_proxy adds ID token).
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     id: deploy-web
@@ -164,6 +213,8 @@ images:
   - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_WEB}:latest
   - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}:${COMMIT_SHA}
   - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_API}:latest
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SIM}:${COMMIT_SHA}
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SIM}:latest
 
 options:
   logging: CLOUD_LOGGING_ONLY

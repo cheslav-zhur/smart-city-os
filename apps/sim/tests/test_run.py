@@ -81,3 +81,23 @@ def test_tape_post_exits_on_http_error() -> None:
                 retry=False,
                 sleep=lambda _seconds: None,
             )
+
+
+def test_post_event_attaches_id_token_when_env_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CITY_API_ID_TOKEN", "1")
+    captured: list[object] = []
+
+    def fake_urlopen(request: object, *args: object, **kwargs: object) -> MagicMock:
+        captured.append(request)
+        return _ok_response({"event_id": "e1", "case_id": 1})
+
+    with patch("run._cloud_run_id_token", return_value="tok") as token:
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            from run import post_event
+
+            post_event("https://api.example.run.app", {"event_id": "e1"})
+
+    token.assert_called_once_with("https://api.example.run.app")
+    assert captured[0].get_header("Authorization") == "Bearer tok"  # type: ignore[attr-defined]

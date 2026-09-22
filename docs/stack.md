@@ -55,7 +55,7 @@ Proposal ≠ execute. Model/tool calls land in audit as data.
 | Piece | Choice |
 |-------|--------|
 | Local | Dev Container + Docker Compose (`postgres`, `dev`; demo profile for `api`/`web`) |
-| Hosted | GCP `city-os-509403`, Cloud Run `web`/`api`/`worker` from `main` ([`deploy-gcp.md`](deploy-gcp.md)); Cloud SQL `city-os`; sim not hosted yet |
+| Hosted | GCP `city-os-509403`, Cloud Run `web`/`api`/`worker`/`sim` from `main` ([`deploy-gcp.md`](deploy-gcp.md)); Cloud SQL `city-os` |
 | Simulator | stdlib script (`make sim`) — not IoT |
 | API tests | pytest (+ httpx) against Postgres `city_test` ([ADR 0008](adr/0008-api-tests-use-city-test.md)); CI on `main` / PRs |
 | Console tests | vitest locally; not in CI until the console thickens |

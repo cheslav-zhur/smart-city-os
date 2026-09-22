@@ -1,4 +1,10 @@
-"""Post traffic samples to the API. Does not write to the database itself."""
+"""Post traffic samples to the API. Does not write to the database itself.
+
+Local: CITY_API_URL defaults to http://127.0.0.1:8000; no auth header.
+Hosted Cloud Run: set CITY_API_ID_TOKEN=1 so each POST carries a Google ID
+token (audience = CITY_API_URL) for private api. When PORT is set, serve
+/health for Cloud Run probes while --live runs.
+"""
 
 from __future__ import annotations
 
@@ -6,11 +12,13 @@ import argparse
 import json
 import os
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterable
 from datetime import datetime, timedelta, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from uuid import uuid4
 
@@ -23,11 +31,47 @@ DEFAULT_API_URL = "http://127.0.0.1:8000"
 LIVE_RETRY_SLEEP_SECONDS = 2.0
 
 
+def _cloud_run_id_token(audience: str) -> str:
+    """Fetch an ID token from the metadata server (Cloud Run / GCE)."""
+    req = urllib.request.Request(
+        "http://metadata.google.internal/computeMetadata/v1/"
+        f"instance/service-accounts/default/identity?audience={audience}",
+        headers={"Metadata-Flavor": "Google"},
+    )
+    with urllib.request.urlopen(req, timeout=5) as resp:
+        return resp.read().decode()
+
+
+def _start_health_server(port: int) -> None:
+    """Stdlib /health for Cloud Run. Local make sim leaves PORT unset."""
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802
+            path = self.path.split("?", 1)[0]
+            if path in ("/health", "/"):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(b"ok\n")
+                return
+            self.send_error(404)
+
+        def log_message(self, fmt: str, *args: object) -> None:
+            return
+
+    server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+    threading.Thread(target=server.serve_forever, name="health", daemon=True).start()
+
+
 def post_event(api_url: str, payload: dict) -> dict:
+    base = api_url.rstrip("/")
+    headers = {"Content-Type": "application/json"}
+    if os.environ.get("CITY_API_ID_TOKEN"):
+        headers["Authorization"] = f"Bearer {_cloud_run_id_token(base)}"
     request = urllib.request.Request(
-        f"{api_url.rstrip('/')}/events",
+        f"{base}/events",
         data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     with urllib.request.urlopen(request) as response:
@@ -120,6 +164,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    port = os.environ.get("PORT")
+    if port:
+        _start_health_server(int(port))
+        print(f"sim_health_listening port={port}", flush=True)
     api_url = os.environ.get("CITY_API_URL", DEFAULT_API_URL)
     if args.live:
         run_live(api_url)
