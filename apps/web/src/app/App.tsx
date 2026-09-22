@@ -77,19 +77,14 @@ export default function App() {
       (selectedId != null && auditQuery.isFetching))
 
   useEffect(() => {
-    if (!casesQuery.isSuccess || !eventsQuery.isSuccess || casesQuery.data == null) {
+    if (!casesQuery.isSuccess || casesQuery.data == null) {
       return
     }
+    // Clear decide error only when cases refresh — not on events-only poll.
     setDecideError(false)
     const nextCases = casesQuery.data.data
     setSelectedId((current) => nextSelectedId(nextCases, current))
-  }, [
-    casesQuery.data,
-    casesQuery.dataUpdatedAt,
-    casesQuery.isSuccess,
-    eventsQuery.dataUpdatedAt,
-    eventsQuery.isSuccess,
-  ])
+  }, [casesQuery.data, casesQuery.dataUpdatedAt, casesQuery.isSuccess])
 
   const approveMutation = usePostApproveCasesCaseIdApprovePost()
   const rejectMutation = usePostRejectCasesCaseIdRejectPost()
@@ -139,8 +134,16 @@ export default function App() {
         }),
       ])
     } catch {
-      // Poll will refresh status; a repeat POST is 409 once decided.
+      // 409 after displace: refresh cases so Send/Dismiss disable immediately.
       setDecideError(true)
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: getGetCasesCasesGetQueryKey(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getGetCaseAuditCasesCaseIdAuditGetQueryKey(selectedId),
+        }),
+      ])
     }
   }
 

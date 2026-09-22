@@ -153,6 +153,45 @@ test('clicking a newer open case selects it and enables buttons', async () => {
   expect(screen.getByRole('button', { name: 'Dismiss' })).toBeEnabled()
 })
 
+test('decide 409 invalidates cases so Send disables on outdated', async () => {
+  const user = userEvent.setup()
+  let cases: CaseListItem[] = [row(1, CASE_OPEN)]
+  fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url === '/api/cases/1/approve') {
+      cases = [row(1, CASE_OUTDATED)]
+      return {
+        ok: false,
+        status: 409,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ detail: 'case already decided' }),
+      }
+    }
+    if (url === '/api/cases') {
+      return jsonResponse(cases)
+    }
+    if (url === '/api/events') {
+      return jsonResponse([])
+    }
+    if (/\/api\/cases\/\d+\/audit$/.test(url)) {
+      return jsonResponse([])
+    }
+    throw new Error(`unexpected fetch ${url}`)
+  })
+  renderDesk()
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Send drone' })).toBeEnabled()
+  })
+
+  await user.click(screen.getByRole('button', { name: 'Send drone' }))
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Send drone' })).toBeDisabled()
+  })
+  expect(screen.getByRole('button', { name: 'Dismiss' })).toBeDisabled()
+})
+
 test('list keeps an aged-off selected row outside the newest ten', async () => {
   const store = Array.from({ length: 11 }, (_, index) => {
     const id = 11 - index
